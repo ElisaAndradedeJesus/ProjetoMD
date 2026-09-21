@@ -52,10 +52,10 @@ git pull --ff-only origin main
 Esse comando baixa as novidades da versão principal que estão no GitHub.
 
 ```bash
-git switch -c feat/contagem-de-pontos
+git switch -c sua-branch
 ```
 
-Esse comando cria e seleciona sua branch. Troque `feat/contagem-de-pontos`
+Esse comando cria e seleciona sua branch. Troque `sua-branch`
 por um nome relacionado à sua tarefa, sem espaços nem acentos.
 
 **Se algum comando der erro, pare e peça ajuda ao grupo, enviando a mensagem
@@ -72,22 +72,30 @@ Não envie senhas, chaves de acesso ou dados pessoais nos arquivos.
 ## 5. Salve e envie para o GitHub
 
 Veja quais arquivos você mudou:
-![alt text](image.png)
 
-Escolha os arquivos que quer incluir clicando no "+"" :
-![alt text](image-2.png)
+<p align="center">
+  <img src="image.png" alt="Lista de arquivos alterados no VS Code" width="360">
+</p>
+
+Escolha os arquivos que quer incluir clicando no `+`:
+
+<p align="center">
+  <img src="image-2.png" alt="Botão + para incluir um arquivo no próximo commit" width="360">
+</p>
 
 Registre a mudança com uma mensagem curta:
 
-```bash
-git commit -m "feat: adiciona contagem de pontos"
-```
+<p align="center">
+  <img src="image-3.png" alt="Campo para escrever a mensagem e botão para fazer o commit no VS Code" width="360">
+</p>
 
 Envie para o GitHub. Use o mesmo nome de branch que criou no passo 3:
 
 ```bash
-git push -u origin feat/contagem-de-pontos
+git push -u origin sua-branch
 ```
+
+Ou clique no botão azul `Push` ou `Publish Branch`.
 
 ## 6. Peça para alguém conferir
 
