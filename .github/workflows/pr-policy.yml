@@ -1,0 +1,32 @@
+name: Política de contribuição
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, edited, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+jobs:
+  pr-policy:
+    name: pr-policy
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Validar título do PR
+        shell: python
+        run: |
+          import json
+          import os
+          import re
+          import sys
+
+          with open(os.environ["GITHUB_EVENT_PATH"], encoding="utf-8") as event_file:
+              title = json.load(event_file)["pull_request"]["title"]
+
+          pattern = r"(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-z0-9_-]+\))?!?: \S[^\r\n]*"
+          if len(title) > 100 or not re.fullmatch(pattern, title):
+              print("::error::O título precisa começar com um tipo e ter uma descrição. Exemplo: 'feat: adiciona contagem de pontos'. Use até 100 caracteres. Veja os exemplos em CONTRIBUTING.md.")
+              sys.exit(1)
+          print("Título aprovado. Ainda é preciso que outra pessoa revise suas mudanças.")
