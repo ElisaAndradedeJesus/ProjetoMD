@@ -1,3 +1,13 @@
+## Grupo e tarefa relacionada
+
+<!-- Informe Grupo 1, Grupo 2, Grupo 3 ou Geral. -->
+Grupo:
+
+<!-- Informe a issue relacionada, por exemplo: #12.
+Se este PR concluir a tarefa, use: Closes #12.
+Se não houver issue, escreva “Sem issue relacionada”. -->
+Issue:
+
 ## O que você mudou?
 
 <!-- Explique com suas palavras. Exemplo: adicionei a contagem de pontos. -->
