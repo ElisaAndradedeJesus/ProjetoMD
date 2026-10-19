@@ -31,6 +31,8 @@ class DesafiarMaquina:
     segredo: int | None = None
     historico: list[Palpite] = field(default_factory=list)
     status: str = "jogando"  # "jogando" | "venceu" | "perdeu"
+    # Se False, quem chama (ex.: o CLI) decide quando imprimir o resumo final.
+    resumo_automatico: bool = True
 
     def __post_init__(self):
         self.contador = ContadorOperacoes("DesafiarMaquina")
@@ -83,12 +85,15 @@ class DesafiarMaquina:
         else:
             log(f"Resposta: o segredo é {resultado.upper()} que {numero} | custo deste palpite: O(1)")
 
-        if self.status != "jogando":
-            self.contador.imprimir_resumo(
-                "O(k) por partida (k = tentativas), cada palpite O(1)",
-                self.maximo - self.minimo + 1,
-            )
+        if self.status != "jogando" and self.resumo_automatico:
+            self.imprimir_resumo()
         return palpite
+
+    def imprimir_resumo(self) -> None:
+        self.contador.imprimir_resumo(
+            "O(k) por partida (k = tentativas), cada palpite O(1)",
+            self.maximo - self.minimo + 1,
+        )
 
     def estado(self) -> dict:
         return {

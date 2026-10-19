@@ -59,11 +59,16 @@ class MaquinaVidente:
         meio = (self.baixo + self.alto) // 2
         self.contador.registrar("calculo_meio", detalhe=f"({self.baixo} + {self.alto}) // 2 = {meio}")
 
-        pensamento = (f"Analisando intervalo de {self.baixo} a {self.alto}... "
-                      f"{self.candidatos} candidatos. Descartando 50% das possibilidades.")
+        if self.candidatos == 1:
+            pensamento = f"Só resta 1 candidato: {meio}. Não há mais nada a descartar."
+        else:
+            pensamento = (f"Analisando intervalo de {self.baixo} a {self.alto}... "
+                          f"{self.candidatos} candidatos. Descartando 50% das possibilidades.")
+        rotulo = "candidato" if self.candidatos == 1 else "candidatos"
         log(f"--- Passo {passo}/{self.max_tentativas} ---")
-        log(f"Intervalo [{self.baixo}, {self.alto}] = {self.candidatos} candidatos "
-            f"(log2 = {math.log2(self.candidatos):.2f} passos restantes no pior caso)")
+        log(f"Intervalo [{self.baixo}, {self.alto}] = {self.candidatos} {rotulo} "
+            f"(log2 = {math.log2(self.candidatos):.2f} -> no pior caso faltam "
+            f"⌈log2({self.candidatos}+1)⌉ = {pior_caso_busca_binaria(self.candidatos)} palpite(s))")
         log(f"Palpite da máquina: {meio}")
 
         self.historico.append(PalpiteMaquina(meio, (self.baixo, self.alto), self.candidatos, pensamento))
