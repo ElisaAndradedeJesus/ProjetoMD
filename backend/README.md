@@ -35,7 +35,7 @@ pip install -r requirements.txt
 python -m app.cli                  # jogar no terminal vendo os prints de Big O
 python -m app.analise              # tabela comparando busca linear e binária
 uvicorn app.api:app --reload       # API em http://localhost:8000/docs
-pytest                             # testes
+python -m pytest                   # testes
 ```
 
 ## Rodando o backend no Ubuntu
