@@ -1,6 +1,6 @@
 # Busca Binária — Jogos de Adivinhação
 
-Monorepo do trabalho. Dois modos de jogo para estudar complexidade (Big O):
+Monorepo do trabalho de matemática discreta. Dois modos de jogo para estudar complexidade (Big O):
 
 | Modo | Quem adivinha | Intervalo | Tentativas | Complexidade |
 |---|---|---|---|---|
@@ -36,6 +36,16 @@ python -m app.cli                  # jogar no terminal vendo os prints de Big O
 python -m app.analise              # tabela comparando busca linear e binária
 uvicorn app.api:app --reload       # API em http://localhost:8000/docs
 pytest                             # testes
+```
+
+## Rodando o backend no Ubuntu
+
+```bash
+sudo apt install python3-venv python3-pip   # só na primeira vez
+cd backend
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 ```
 
 Para desligar os prints: `BIGO_VERBOSE=0`.
