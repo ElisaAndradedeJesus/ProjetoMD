@@ -1,6 +1,6 @@
 # Busca Binária — Jogos de Adivinhação
 
-Monorepo do trabalho de matemática discreta. Dois modos de jogo para estudar complexidade (Big O):
+Monorepo do trabalho de Matemática Discreta. Dois modos de jogo para estudar complexidade (Big O):
 
 | Modo | Quem adivinha | Intervalo | Tentativas | Complexidade |
 |---|---|---|---|---|

@@ -41,7 +41,8 @@ class MaquinaVidente:
         log(f"Nova partida: intervalo [{self.minimo}, {self.maximo}], n = {n}")
         log(f"log2({n}) = {math.log2(n):.2f} -> a busca binária precisa de no máximo "
             f"{pior_caso_busca_binaria(n)} palpites")
-        self._proximo_palpite()
+        with self.contador.medir("primeiro palpite"):
+            self._proximo_palpite()
 
     @property
     def candidatos(self) -> int:
@@ -80,28 +81,30 @@ class MaquinaVidente:
         antes = self.candidatos
         log(f"Feedback do usuário para {palpite.numero}: {feedback.upper()}")
 
-        self.contador.registrar("comparacao", detalhe="verifica tipo de feedback")
-        if feedback == ACERTOU:
-            self.status = "acertou"
-        else:
-            if feedback == MAIOR:
-                self.baixo = palpite.numero + 1
+        # Só este bloco é cronometrado: o tempo que o usuário leva respondendo fica de fora.
+        with self.contador.medir(f"feedback '{feedback}' para {palpite.numero}"):
+            self.contador.registrar("comparacao", detalhe="verifica tipo de feedback")
+            if feedback == ACERTOU:
+                self.status = "acertou"
             else:
-                self.alto = palpite.numero - 1
-            self.contador.registrar("atualizacao_intervalo",
-                                    detalhe=f"novo intervalo [{self.baixo}, {self.alto}]")
-
-            if self.baixo > self.alto:
-                # o usuário deu dicas contraditórias: não sobrou nenhum candidato
-                self.status = "inconsistente"
-                log("Intervalo vazio! As dicas foram contraditórias.")
-            else:
-                log(f"Candidatos: {antes} -> {self.candidatos} "
-                    f"(reduziu {100 * (1 - self.candidatos / antes):.0f}%)")
-                if len(self.historico) >= self.max_tentativas:
-                    self.status = "perdeu"
+                if feedback == MAIOR:
+                    self.baixo = palpite.numero + 1
                 else:
-                    self._proximo_palpite()
+                    self.alto = palpite.numero - 1
+                self.contador.registrar("atualizacao_intervalo",
+                                        detalhe=f"novo intervalo [{self.baixo}, {self.alto}]")
+
+                if self.baixo > self.alto:
+                    # o usuário deu dicas contraditórias: não sobrou nenhum candidato
+                    self.status = "inconsistente"
+                    log("Intervalo vazio! As dicas foram contraditórias.")
+                else:
+                    log(f"Candidatos: {antes} -> {self.candidatos} "
+                        f"(reduziu {100 * (1 - self.candidatos / antes):.0f}%)")
+                    if len(self.historico) >= self.max_tentativas:
+                        self.status = "perdeu"
+                    else:
+                        self._proximo_palpite()
 
         if self.status != "jogando":
             self.contador.imprimir_resumo(

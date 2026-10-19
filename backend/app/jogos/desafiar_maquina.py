@@ -34,9 +34,10 @@ class DesafiarMaquina:
 
     def __post_init__(self):
         self.contador = ContadorOperacoes("DesafiarMaquina")
-        if self.segredo is None:
-            self.segredo = random.randint(self.minimo, self.maximo)
-        self.contador.registrar("sorteio", detalhe="random.randint é O(1)")
+        with self.contador.medir("sorteio"):
+            if self.segredo is None:
+                self.segredo = random.randint(self.minimo, self.maximo)
+            self.contador.registrar("sorteio", detalhe="random.randint é O(1)")
         n = self.maximo - self.minimo + 1
         log(f"Nova partida: intervalo [{self.minimo}, {self.maximo}], n = {n}")
         log(f"Com busca binária o usuário precisa de no máximo "
@@ -58,24 +59,29 @@ class DesafiarMaquina:
 
         log(f"--- Tentativa {self.tentativas_usadas + 1}/{self.max_tentativas}: palpite {numero} ---")
 
-        # Avaliação: no máximo 2 comparações -> O(1)
-        self.contador.registrar("comparacao", detalhe=f"{numero} == {self.segredo}?")
-        if numero == self.segredo:
-            resultado = ACERTOU
-        else:
-            self.contador.registrar("comparacao", detalhe=f"{numero} < {self.segredo}?")
-            resultado = MAIOR if numero < self.segredo else MENOR
+        # Só este bloco é cronometrado: o tempo que o usuário leva digitando fica de fora.
+        with self.contador.medir(f"palpite {numero}"):
+            # Avaliação: no máximo 2 comparações -> O(1)
+            self.contador.registrar("comparacao", detalhe=f"{numero} == {self.segredo}?")
+            if numero == self.segredo:
+                resultado = ACERTOU
+            else:
+                self.contador.registrar("comparacao", detalhe=f"{numero} < {self.segredo}?")
+                resultado = MAIOR if numero < self.segredo else MENOR
 
-        palpite = Palpite(numero, resultado)
-        self.historico.append(palpite)
-        self.contador.registrar("insercao_historico", detalhe="list.append é O(1) amortizado")
+            palpite = Palpite(numero, resultado)
+            self.historico.append(palpite)
+            self.contador.registrar("insercao_historico", detalhe="list.append é O(1) amortizado")
+
+            if resultado == ACERTOU:
+                self.status = "venceu"
+            elif self.tentativas_restantes == 0:
+                self.status = "perdeu"
 
         if resultado == ACERTOU:
-            self.status = "venceu"
-        elif self.tentativas_restantes == 0:
-            self.status = "perdeu"
-
-        log(f"Resposta: o segredo é {resultado.upper()} | custo deste palpite: O(1)")
+            log(f"Resposta: ACERTOU! O segredo era {self.segredo} | custo deste palpite: O(1)")
+        else:
+            log(f"Resposta: o segredo é {resultado.upper()} que {numero} | custo deste palpite: O(1)")
 
         if self.status != "jogando":
             self.contador.imprimir_resumo(
