@@ -11,9 +11,22 @@ import {
   Trophy,
   Wand2,
 } from "lucide-react";
+import {
+  apiUrl, 
+  ApiError,
+  enviarFeedback,
+  enviarPalpite,
+  errorMessage,
+  iniciarDesafio,
+  iniciarVidente,
+  type estadoDesafio,
+  type EstadoVidente,
+  type resultado,
+} from "./api.ts";
+import { send } from "vite";
 
 type Screen = "menu" | "player" | "machine";
-type Hint = "maior" | "menor" | "acerto";
+/*--type Hint = "maior" | "menor" | "acerto";--*/
 
 const BLUE = "#3b82f6";
 const ORANGE = "#f97316";
@@ -74,6 +87,52 @@ function Tactile({
     />
   );
 }
+
+/* ---------- carregando / erro de conexão ---------- */
+
+function StatusScreen({
+  loading,
+  error,
+  onRetry,
+  onBack,
+}: {
+  loading: boolean;
+  error: string;
+  onRetry: () => void;
+  onBack: () => void;
+}) {
+  return (
+    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col items-center justify-center gap-5 px-6 text-center">
+      {loading ? (
+        <p className="text-slate-500" aria-live="polite">
+          Preparando a partida…
+        </p>
+      ) : (
+        <>
+          <h1 className="text-xl font-bold text-ink">Não foi possível iniciar a partida</h1>
+          <p className="text-sm text-slate-500">
+            {error}
+            <br />
+            Confira se o backend está rodando em {apiUrl}.
+          </p>
+          <Tactile
+            color={BLUE}
+            edge="#1d4ed8"
+            depth={6}
+            onClick={onRetry}
+            className="h-12 rounded-2xl px-6 font-bold text-white"
+          >
+            Tentar de novo
+          </Tactile>
+          <button onClick={onBack} className="h-11 rounded-xl px-4 text-sm font-semibold text-slate-500 hover:bg-slate-100">
+            Voltar ao menu
+          </button>
+        </>
+      )}
+    </main>
+  );
+}
+
 
 /* ---------- tela inicial ---------- */
 
@@ -145,10 +204,10 @@ function Menu({ go }: { go: (s: Screen) => void }) {
 
 /* ---------- tela 2 - Desafiar a Máquina ---------- */
 
-type Guess = { n: number; hint: Hint };
+/*--type Guess = { n: number; hint: Hint };--*/
 
-const HintBadge = ({ hint }: { hint: Hint }) => {
-  if (hint === "acerto")
+const HintBadge = ({ hint }: { hint: resultado }) => {
+  if (hint === "acertou")
     return (
       <span className="inline-flex items-center gap-1.5 rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-700">
         <Check size={14} strokeWidth={3} /> Acertou
@@ -168,7 +227,8 @@ const HintBadge = ({ hint }: { hint: Hint }) => {
 };
 
 function PlayerGame({ back }: { back: () => void }) {
-  const newSecret = () => Math.floor(Math.random() * 100) + 1;
+  /**
+   * const newSecret = () => Math.floor(Math.random() * 100) + 1;
   const [secret, setSecret] = useState(newSecret);
   const [input, setInput] = useState("");
   const [history, setHistory] = useState<Guess[]>([]);
@@ -178,40 +238,95 @@ function PlayerGame({ back }: { back: () => void }) {
   const won = history.some((g) => g.hint === "acerto");
   const lost = !won && history.length >= MAX_ATTEMPTS;
   const over = won || lost;
+  */
+  const [game, setGame] = useState<estadoDesafio | null>(null);
+  const [starting, setStarting] = useState(true);
+  const [startError, setStartError] = useState("");
+  const [sending, setSending] = useState(false);
+  const [input, setInput] = useState("");
+  const [shake, setShake] = useState(0);
+  const [error, setError] = useState("");
+  const startedRef = useRef(false);
+
+  // Cria uma partida no backend (a máquina sorteia o número lá).
+  const start = useCallback(async () => {
+    setGame(null);
+    setStarting(true);
+    setStartError("");
+    setInput("");
+    setError("");
+    try {
+      setGame(await iniciarDesafio());
+    } catch (e) {
+      setStartError(errorMessage(e));
+    } finally {
+      setStarting(false);
+    }
+  }, []);
+  const restart = start;
+
+  useEffect(() => {
+    if (startedRef.current) return; // StrictMode roda o efeito 2x em dev: evita criar 2 partidas
+    startedRef.current = true;
+    start();
+  }, [start]);
+
+  const over = !!game && game.status !== "jogando";
+  const won = game?.status === "venceu";
+  const maxDigits = game ? String(game.intervalo[1]).length : 0;
 
   const press = useCallback(
     (d: string) => {
-      if (over) return;
+      if (!game || over) return;
       setError("");
       setInput((v) => (v.length >= 3 ? v : v === "0" ? d : v + d));
     },
-    [over],
+    [game, over, maxDigits],
   );
   const erase = useCallback(() => {
     setError("");
     setInput((v) => v.slice(0, -1));
   }, []);
 
-  const submit = useCallback(() => {
-    if (over) return;
+  const submit = useCallback(async () => {
+    if (!game || over || sending) return;
     const n = Number(input);
-    if (!input || n < 1 || n > 100) {
-      setError("Digite um número de 1 a 100");
+    const [min, max] = game.intervalo;
+    if (!input || n < min || n > max) {
+      setError(`Digite um número de ${min} a ${max}`);
       setShake((s) => s + 1);
       return;
     }
-    const hint: Hint = n === secret ? "acerto" : n < secret ? "maior" : "menor";
+    setSending(true);
+    try{
+      //quem vai comparar o palpite com o "segredo" é o back 
+      setGame(await enviarPalpite(game.id, n));
+      setInput("");
+      setError("");
+    } catch (e){
+      if (e instanceof ApiError && e.status === 404) {
+        start(); //o backend perdeu a partida: começa outra
+        return;
+      }
+      setError(errorMessage(e));
+      setShake((s) => s + 1);
+    } finally {
+      setSending(false);
+    }
+
+    /*const hint: Hint = n === secret ? "acerto" : n < secret ? "maior" : "menor";
     setHistory((h) => [...h, { n, hint }]);
     setInput("");
     setError("");
-  }, [input, over, secret]);
+    */
+  }, [game, over, sending, input, start]);
 
-  const restart = () => {
+  /*const restart = () => {
     setSecret(newSecret());
     setHistory([]);
     setInput("");
     setError("");
-  };
+  };*/
 
   const ref = useRef({ press, erase, submit, restart, over });
   ref.current = { press, erase, submit, restart, over };
@@ -226,22 +341,26 @@ function PlayerGame({ back }: { back: () => void }) {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  /*-- novo --*/
+  if (!game) return <StatusScreen loading={starting} error={startError} onRetry={start} onBack={back} />;
+
+  const history = game.historico.map((p) => ({ n: p.numero, hint: p.resultado}));
   const last = history[history.length - 1];
   const dotColor = (i: number) => {
     const g = history[i];
     if (!g) return "#e2e8f0";
-    return g.hint === "acerto" ? GREEN : g.hint === "maior" ? BLUE : ORANGE;
+    return g.hint === "acertou" ? GREEN : g.hint === "maior" ? BLUE : ORANGE;
   };
 
   return (
     <div className="min-h-dvh">
       <TopBar onBack={back}>
-        <div className="flex flex-col items-end gap-1" aria-label={`Tentativas: ${history.length} de ${MAX_ATTEMPTS}`}>
+        <div className="flex flex-col items-end gap-1" aria-label={`Tentativas: ${game.tentativas_usadas} de ${game.max_tentativas}`}>
           <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
-            Tentativas {history.length}/{MAX_ATTEMPTS}
+            Tentativas {game.tentativas_usadas}/{game.max_tentativas}
           </span>
           <div className="flex gap-1.5">
-            {Array.from({ length: MAX_ATTEMPTS }).map((_, i) => (
+            {Array.from({ length: game.max_tentativas }).map((_, i) => (
               <span
                 key={i}
                 className="size-3.5 rounded-full transition-colors duration-300 sm:size-4"
@@ -264,7 +383,7 @@ function PlayerGame({ back }: { back: () => void }) {
           >
             <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-widest text-slate-400">
               <span>Seu palpite</span>
-              <span>1 – 100</span>
+              <span>{game.intervalo[0]} - {game.intervalo[1]}</span>
             </div>
             <div
               className="mt-2 flex h-24 items-center justify-end rounded-2xl bg-slate-50 px-5 text-[64px] font-extrabold leading-none tabular-nums text-ink shadow-[inset_0_3px_8px_rgba(15,23,42,0.08)] sm:h-36 sm:px-6 sm:text-[110px]"
@@ -276,7 +395,7 @@ function PlayerGame({ back }: { back: () => void }) {
             <p className={`mt-3 h-5 text-sm font-medium ${error ? "text-red-500" : "text-slate-500"}`}>
               {error ||
                 (last
-                  ? last.hint === "acerto"
+                  ? last.hint === "acertou"
                     ? "Você acertou!"
                     : `O segredo é ${last.hint === "maior" ? "MAIOR" : "MENOR"} que ${last.n}.`
                   : "Digite um número e envie seu palpite.")}
@@ -326,7 +445,7 @@ function PlayerGame({ back }: { back: () => void }) {
             color={GREEN}
             edge="#15803d"
             depth={8}
-            disabled={over}
+            disabled={over || sending}
             onClick={submit}
             className="flex h-12 items-center justify-center gap-3 rounded-2xl text-base font-bold text-white hover:brightness-105 sm:h-[72px] sm:text-xl"
           >
@@ -369,8 +488,8 @@ function PlayerGame({ back }: { back: () => void }) {
           title={won ? "Você acertou!" : "Fim das tentativas"}
           detail={
             won
-              ? `Número ${secret} encontrado em ${history.length} ${history.length === 1 ? "tentativa" : "tentativas"}.`
-              : `O número secreto era ${secret}.`
+              ? `Número ${game.segredo} encontrado em ${game.tentativas_usadas} ${game.tentativas_usadas === 1 ? "tentativa" : "tentativas"}.`
+              : `O número secreto era ${game.segredo}.`
           }
           onRestart={restart}
           onMenu={back}
@@ -425,10 +544,11 @@ function EndModal({
 
 /* ---------- tela 3 - Máquina Vidente ---------- */
 
-type Step = { lo: number; hi: number; guess: number; answer: "maior" | "menor" | null };
+/*type Step = { lo: number; hi: number; guess: number; answer: "maior" | "menor" | null };
 
 const mid = (lo: number, hi: number) => Math.floor((lo + hi) / 2);
 const newStep = (lo: number, hi: number): Step => ({ lo, hi, guess: mid(lo, hi), answer: null });
+*/
 
 function NodeIcon({ className = "" }: { className?: string }) {
   return (
@@ -443,16 +563,54 @@ function NodeIcon({ className = "" }: { className?: string }) {
 }
 
 function MachineGame({ back }: { back: () => void }) {
-  const [steps, setSteps] = useState<Step[]>([newStep(1, 100)]);
+  /*const [steps, setSteps] = useState<Step[]>([newStep(1, 100)]);
   const [done, setDone] = useState(false);
   const [broken, setBroken] = useState(false);
   const chatRef = useRef<HTMLDivElement>(null);
 
   const cur = steps[steps.length - 1];
   const left = cur.hi - cur.lo + 1;
+  */
+
+  const [game, setGame] = useState<EstadoVidente | null>(null);
+  const [starting, setStarting] = useState(true);
+  const [startError, setStartError] = useState("");
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState("");
+  const startedRef = useRef(false);
+  const chatRef = useRef<HTMLDivElement>(null);
+
+  //cria a partida no back e devolde o primeiro palpite da máquina
+  const start = useCallback(async () => {
+    setGame(null);
+    setStarting(true);
+    setStartError("");
+    setError("");
+    try {
+      setGame(await iniciarVidente());
+    } catch (e) {
+      setStartError(errorMessage(e));
+    } finally {
+      setStarting(false);
+    }
+  }, []);
+  const restart = start;
+
+  useEffect(() => {
+    if (startedRef.current) return; // StrictMode roda o efeito 2x em dev: evita criar 2 partidas
+    startedRef.current = true;
+    start();
+  }, [start]);
+
+  const status = game?.status;
+  const done = status === "acertou";
+  const broken = status === "inconsistente"; // dicas contraditórias
+  const lost = status === "perdeu"; // estourou o limite de tentativas
+  const stopped = broken || lost;
+  const over = !!game && status !== "jogando";
 
   const answer = useCallback(
-    (kind: "maior" | "menor" | "acerto") => {
+    /*(kind: "maior" | "menor" | "acerto") => {
       if (done || broken) return;
       if (kind === "acerto") return setDone(true);
       const { lo, hi, guess } = steps[steps.length - 1];
@@ -462,25 +620,42 @@ function MachineGame({ back }: { back: () => void }) {
         copy[copy.length - 1] = { ...copy[copy.length - 1], answer: kind };
         return next.lo > next.hi ? copy : [...copy, newStep(next.lo, next.hi)];
       });
-      if (next.lo > next.hi) setBroken(true);
+      if (next.lo > next.hi) setBroken(true);*/
+    async (kind: resultado) => {
+      if (!game || over || sending) return;
+      setSending(true);
+      setError("");
+      try{
+        //quem calcula o prox palpite é o back
+        setGame(await enviarFeedback(game.id, kind));
+      } catch (e) {
+        if (e instanceof ApiError && e.status === 404) {
+          start(); 
+          return;
+        }
+        setError(errorMessage(e));
+      } finally {
+        setSending(false);
+      }
     },
-    [done, broken, steps],
+    //[done, broken, steps],
+    [game, over, sending, start],
   );
 
-  const restart = () => {
+  /*const restart = () => {
     setSteps([newStep(1, 100)]);
     setDone(false);
     setBroken(false);
-  };
+  };*/
 
-  const ref = useRef({ answer, restart, done, broken });
-  ref.current = { answer, restart, done, broken };
+  const ref = useRef({ answer, restart, over });
+  ref.current = { answer, restart, over };
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const r = ref.current;
       if (e.key === "ArrowLeft") r.answer("maior");
       else if (e.key === "ArrowRight") r.answer("menor");
-      else if (e.key === "Enter") r.done || r.broken ? r.restart() : r.answer("acerto");
+      else if (e.key === "Enter") r.over ? r.restart() : r.answer("acertou");
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -488,10 +663,23 @@ function MachineGame({ back }: { back: () => void }) {
 
   useEffect(() => {
     chatRef.current?.scrollTo({ top: chatRef.current.scrollHeight, behavior: "smooth" });
-  }, [steps.length, done, broken]);
+  //}, [steps.length, done, broken]);
+  }, [game?.historico.length, status]);
+  
+  if (!game) return <StatusScreen loading={starting} error={startError} onRetry={start} onBack={back} />;
 
+  const steps = game.historico;
+  const lastStep = steps[steps.length - 1];
+
+  // escala da barra: intervalo informado pelo backend
+  const [min, max] = game.intervalo;
+  const total = max - min + 1;
   const pct = (n: number) => `${n}%`;
-  const pinLeft = cur.guess - 0.5;
+  const slot = (n: number) => ((n - min + 0.5) /total) * 100;
+  const pinLeft = slot(lastStep.numero);
+  const barLeft = ((game.intervalo_ativo[0] - min) / total) * 100;
+  const barWidth = (game.candidatos / total) * 100;
+  const ticks = [0, 1, 2, 3, 4].map((i) => Math.round(min + ((max - min) * i) / 4));
 
   const Machine = ({ children, strong = false, tone = "blue" }: { children: React.ReactNode; strong?: boolean; tone?: "blue" | "green" | "red" }) => {
     const ring = tone === "green" ? "border-green-300 bg-green-50" : tone === "red" ? "border-red-200 bg-red-50" : "border-blue-200 bg-white";
@@ -515,7 +703,7 @@ function MachineGame({ back }: { back: () => void }) {
 
   const buttons = [
     { k: "maior" as const, label: "É MAIOR", key: "←", color: BLUE, edge: "#1d4ed8", Icon: ArrowUp, main: false },
-    { k: "acerto" as const, label: "ACERTOU!", key: "Enter", color: GREEN, edge: "#15803d", Icon: Check, main: true },
+    { k: "acertou" as const, label: "ACERTOU!", key: "Enter", color: GREEN, edge: "#15803d", Icon: Check, main: true },
     { k: "menor" as const, label: "É MENOR", key: "→", color: ORANGE, edge: "#c2410c", Icon: ArrowDown, main: false },
   ];
 
@@ -555,11 +743,11 @@ function MachineGame({ back }: { back: () => void }) {
           </div>
           <div ref={chatRef} className="flex max-h-[40dvh] min-h-[150px] flex-col gap-3 overflow-y-auto p-4 sm:max-h-[340px] sm:p-5" aria-live="polite">
             {steps.map((s, i) => {
-              const n = s.hi - s.lo + 1;
+              const n = s.candidatos;
               return (
                 <div key={i} className="flex flex-col gap-3">
                   <Machine>
-                    &gt; Analisando intervalo de {s.lo} a {s.hi}... {n} candidatos. Descartando 50% das possibilidades.
+                    &gt; {s.pensamento}
                   </Machine>
                   <Machine strong>
                     {i === 0
@@ -567,16 +755,16 @@ function MachineGame({ back }: { back: () => void }) {
                       : n <= 3
                         ? "Estou quase lá. "
                         : "Recalibrando a rede com sua dica. "}
-                    O seu número é <b className="text-blue-600">{s.guess}</b>?
+                    O seu número é <b className="text-blue-600">{s.numero}</b>?
                   </Machine>
-                  {s.answer && (
+                  {(s.feedback === "maior" || s.feedback === "menor")&& (
                     <div className="pop flex justify-end">
                       <span
                         className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold text-white"
-                        style={{ background: s.answer === "maior" ? BLUE : ORANGE }}
+                        style={{ background: s.feedback === "maior" ? BLUE : ORANGE }}
                       >
-                        {s.answer === "maior" ? <ArrowUp size={14} strokeWidth={3} /> : <ArrowDown size={14} strokeWidth={3} />}
-                        {s.answer === "maior" ? "É maior" : "É menor"}
+                        {s.feedback === "maior" ? <ArrowUp size={14} strokeWidth={3} /> : <ArrowDown size={14} strokeWidth={3} />}
+                        {s.feedback === "maior" ? "É maior" : "É menor"}
                       </span>
                     </div>
                   )}
@@ -585,13 +773,18 @@ function MachineGame({ back }: { back: () => void }) {
             })}
             {done && (
               <Machine strong tone="green">
-                Padrão confirmado. Encontrei <b className="text-green-600">{cur.guess}</b> em {steps.length}{" "}
+                Padrão confirmado. Encontrei <b className="text-green-600">{lastStep.numero}</b> em {steps.length}{" "}
                 {steps.length === 1 ? "ciclo" : "ciclos"}.
               </Machine>
             )}
             {broken && (
               <Machine strong tone="red">
                 Inconsistência detectada: nenhum número satisfaz suas dicas. Vamos reiniciar a rede?
+              </Machine>
+            )}
+            {lost && (
+              <Machine strong tone="red">
+                Esgotei as {game.max_tentativas} tentativas sem encontrar o seu número. Alguma dica pode estar errada. Vamos reiniciar a rede?
               </Machine>
             )}
           </div>
@@ -602,23 +795,23 @@ function MachineGame({ back }: { back: () => void }) {
           <div className="flex items-end justify-between text-[11px] uppercase tracking-widest text-slate-400">
             <span>espectro de busca</span>
             <span className="normal-case tracking-normal text-slate-500">
-              ativo: <b className="text-ink">{broken ? "—" : `${cur.lo}–${cur.hi}`}</b> · {broken ? 0 : left} candidatos
+              ativo: <b className="text-ink">{broken ? "—" : `${game.intervalo_ativo[0]}–${game.intervalo_ativo[1]}`}</b> · {game.candidatos} candidatos
             </span>
           </div>
-
+          
           <div className="relative mx-7 mt-14 sm:mx-8 sm:mt-20">
             {/* pin */}
-            {!broken && (
+            {!stopped && (
               <div
                 className="absolute bottom-0 z-10 -translate-x-1/2 transition-[left] duration-700 ease-out"
                 style={{ left: pct(pinLeft) }}
               >
                 <div className="flex flex-col items-center">
                   <div
-                    key={cur.guess}
+                    key={lastStep.numero}
                     className="pop mb-1 flex min-w-14 items-center justify-center rounded-2xl bg-blue-500 px-3 py-1 text-2xl font-semibold text-white shadow-[0_5px_0_#1d4ed8,0_0_28px_rgba(59,130,246,0.55)] sm:min-w-20 sm:px-4 sm:py-1.5 sm:text-4xl"
                   >
-                    {done ? <Check size={34} strokeWidth={3} className="my-1" /> : cur.guess}
+                    {done ? <Check size={34} strokeWidth={3} className="my-1" /> : lastStep.numero}
                   </div>
                   <div className="h-0 w-0 border-x-[9px] border-t-[11px] border-x-transparent border-t-blue-500" />
                   <div className="h-10 w-1.5 rounded-b-full bg-blue-500 shadow-[0_0_18px_6px_rgba(59,130,246,0.35)] sm:h-16" />
@@ -626,7 +819,7 @@ function MachineGame({ back }: { back: () => void }) {
               </div>
             )}
 
-            {/* bar */}
+          {/* bar */}
             <div className="relative mb-0 h-11 w-full overflow-hidden rounded-2xl bg-slate-100 shadow-[inset_0_3px_8px_rgba(15,23,42,0.12)] sm:h-16">
               <div
                 className="absolute inset-0"
@@ -639,8 +832,8 @@ function MachineGame({ back }: { back: () => void }) {
                 <div
                   className="absolute inset-y-0 transition-[left,width] duration-700 ease-out"
                   style={{
-                    left: pct(cur.lo - 1),
-                    width: pct(left),
+                    left: pct(barLeft),
+                    width: pct(barWidth),
                     background: done ? "linear-gradient(180deg,#4ade80,#22c55e)" : "linear-gradient(180deg,#60a5fa,#3b82f6)",
                     boxShadow: "inset 0 -4px 0 rgba(0,0,0,0.14), 0 0 24px rgba(59,130,246,0.35)",
                   }}
@@ -650,16 +843,16 @@ function MachineGame({ back }: { back: () => void }) {
                 <span
                   key={i}
                   className="absolute inset-y-0 w-px bg-white/70"
-                  style={{ left: pct(s.guess - 0.5), display: "none" }}
+                  style={{ left: pct(slot(s.numero)), display: "none" }}
                 />
               ))}
             </div>
             <div className="relative mt-2 h-5 text-[11px] text-slate-400">
-              {[1, 25, 50, 75, 100].map((t) => (
+              {ticks.map((t) => (
                 <span
                   key={t}
                   className="absolute -translate-x-1/2"
-                  style={{ left: pct(t === 1 ? 0.5 : t - 0.5) }}
+                  style={{ left: pct(slot(t)) }}
                 >
                   {t}
                 </span>

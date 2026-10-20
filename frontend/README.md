@@ -116,3 +116,27 @@ Apague a pasta `node_modules` e rode `pnpm install` de novo.
 **A porta 5173 já está em uso?**
 Feche o outro servidor que está rodando, ou o Vite escolherá outra porta e mostrará no terminal qual é.
 
+**Rodando juntamente com o backend **
+Dentro da pasta do projetoMD rode:
+```
+git fetch
+git worktree add ../ProjetoMD-backend origin/staging
+```
+
+Confirme se os documentos da branch staging esteja localizada na pasta ProjetoMD-backend
+
+Com isso, crie um terminal dentro da pasta referida acima e rode os seguintes comandos:
+```
+cd backend
+python -m venv .venv && source .venv/bin/activate 
+pip install -r requirements.txt
+uvicorn app.api:app --reload
+```
+
+Crie um terminal na pasta ProjetoMD e rode
+```
+cd frontend
+pnpm install
+pnpm dev
+```
+
