@@ -116,7 +116,8 @@ Apague a pasta `node_modules` e rode `pnpm install` de novo.
 **A porta 5173 já está em uso?**
 Feche o outro servidor que está rodando, ou o Vite escolherá outra porta e mostrará no terminal qual é.
 
-**Rodando juntamente com o backend **
+**Rodando juntamente com o backend**
+
 Dentro da pasta do projetoMD rode:
 ```
 git fetch
