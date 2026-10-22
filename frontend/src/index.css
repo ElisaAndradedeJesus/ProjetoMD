@@ -1,0 +1,80 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap");
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif;
+  --color-ink: #1f2937;
+  --color-more: #3b82f6;
+  --color-less: #f97316;
+  --color-win: #22c55e;
+}
+
+:root {
+  font-family: var(--font-sans);
+  color: #1f2937;
+  font-synthesis: none;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background:
+    radial-gradient(circle at 50% 0%, #ffffff 0, rgba(255, 255, 255, 0) 55%),
+    #f1f5f9;
+}
+
+button {
+  font: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.key-3d {
+  transition: transform 90ms ease, box-shadow 90ms ease;
+}
+.key-3d:active:not(:disabled) {
+  transform: translateY(var(--depth, 6px));
+  box-shadow: 0 0 0 var(--edge), 0 2px 6px rgba(15, 23, 42, 0.15) !important;
+}
+
+@keyframes pop {
+  0% { transform: scale(0.6); opacity: 0; }
+  70% { transform: scale(1.08); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.pop { animation: pop 320ms ease-out both; }
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-8px); }
+  75% { transform: translateX(8px); }
+}
+.shake { animation: shake 280ms ease-in-out; }
+
+@keyframes slide-in {
+  from { transform: translateY(-8px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.slide-in { animation: slide-in 260ms ease-out both; }
+
+@keyframes rise {
+  from { transform: translateY(14px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.rise { animation: rise 420ms ease-out both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .pop, .shake, .slide-in, .rise { animation: none; }
+}
+
+body {
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
+  overflow-x: hidden;
+}
+
+@media (max-height: 520px) and (orientation: landscape) {
+  .rise { animation-duration: 200ms; }
+}
