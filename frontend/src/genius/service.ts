@@ -1,0 +1,92 @@
+export const categorias = {
+  textura: ["Cabelo Cacheado", "Cabelo Ondulado", "Cabelo Liso"],
+  comprimento: ["Cabelo Curto", "Cabelo Médio", "Cabelo Longo"],
+  olhos: ["Olhos Castanhos", "Olhos Azuis", "Olhos Verdes"],
+  oculos: ["Com Óculos", "Sem Óculos"],
+};
+export type Categoria = keyof typeof categorias;
+export type Perfil = Record<Categoria, string>;
+export type Pergunta = { categoria: Categoria; opcao: string; texto: string };
+export type Estado = {
+  id: string;
+  status: "jogando" | "descobriu" | "limite";
+  usadas: number;
+  candidatos: Perfil[];
+  pergunta: Pergunta | null;
+  historico: { pergunta: Pergunta; resposta: boolean }[];
+  perfil: Perfil | null;
+};
+export interface ServicoGenius {
+  iniciarPartida(): Promise<Estado>;
+  responder(id: string, resposta: boolean): Promise<Estado>;
+}
+export const perfis: Perfil[] = categorias.textura.flatMap(textura =>
+  categorias.comprimento.flatMap(comprimento => categorias.olhos.flatMap(olhos =>
+    categorias.oculos.map(oculos => ({ textura, comprimento, olhos, oculos })))));
+
+// Minimiza o maior grupo restante. Empates mantêm a ordem das categorias/opções.
+export function escolherPergunta(candidatos: Perfil[]): Pergunta | null {
+  let melhor: Pergunta | null = null;
+  let custo = Infinity;
+  for (const categoria of Object.keys(categorias) as Categoria[]) {
+    for (const opcao of categorias[categoria]) {
+      const sim = candidatos.filter(p => p[categoria] === opcao).length;
+      if (sim === 0 || sim === candidatos.length) continue;
+      const piorGrupo = Math.max(sim, candidatos.length - sim);
+      if (piorGrupo < custo) {
+        custo = piorGrupo;
+        melhor = { categoria, opcao, texto: `O perfil possui ${opcao.toLocaleLowerCase("pt-BR")}?` };
+      }
+    }
+  }
+  return melhor;
+}
+
+export function criarServicoLocal(): ServicoGenius {
+  const partidas = new Map<string, Estado>();
+  return {
+    async iniciarPartida() {
+      // Uma nova partida substitui a anterior deste serviço.
+      partidas.clear();
+      const estado: Estado = { id: crypto.randomUUID(), status: "jogando", usadas: 0,
+        candidatos: structuredClone(perfis), pergunta: escolherPergunta(perfis), historico: [], perfil: null };
+      partidas.set(estado.id, estado);
+      return structuredClone(estado);
+    },
+    async responder(id, resposta) {
+      if (typeof resposta !== "boolean") throw new Error("Resposta inválida: use Sim ou Não.");
+      const anterior = partidas.get(id);
+      if (!anterior) throw new Error("Partida não encontrada. Inicie uma nova partida.");
+      if (anterior.status !== "jogando" || !anterior.pergunta) throw new Error("Esta partida já terminou.");
+      const pergunta = anterior.pergunta;
+      const candidatos = anterior.candidatos.filter(p => (p[pergunta.categoria] === pergunta.opcao) === resposta);
+      const usadas = anterior.usadas + 1;
+      const status = candidatos.length === 1 ? "descobriu" : usadas >= 6 ? "limite" : "jogando";
+      const estado: Estado = { id, status, usadas, candidatos,
+        pergunta: status === "jogando" ? escolherPergunta(candidatos) : null,
+        historico: [...anterior.historico, { pergunta, resposta }],
+        perfil: status === "descobriu" ? candidatos[0] : null };
+      partidas.set(id, estado);
+      return structuredClone(estado);
+    },
+  };
+}
+
+export function criarServicoApi(base: string, solicitar: typeof fetch = fetch): ServicoGenius {
+  async function post(caminho: string, body?: unknown): Promise<Estado> {
+    let response: Response;
+    try {
+      response = await solicitar(`${base.replace(/\/$/, "")}${caminho}`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: body === undefined ? undefined : JSON.stringify(body),
+        signal: AbortSignal.timeout(10000),
+      });
+    } catch { throw new Error("Não foi possível conectar à API do Genius. Tente novamente ou inicie uma partida local."); }
+    if (!response.ok) throw new Error(`A API do Genius retornou erro ${response.status}.`);
+    return response.json();
+  }
+  return {
+    iniciarPartida: () => post("/genius"),
+    responder: (id, resposta) => post(`/genius/${encodeURIComponent(id)}/resposta`, { resposta }),
+  };
+}

@@ -1,5 +1,7 @@
-import { useState } from "react";
-import { ArrowLeft, Check, Play } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ArrowLeft, Check, Play, RotateCcw, Trophy, X } from "lucide-react";
+
+import { categorias, criarServicoLocal, criarServicoApi, type Estado, type Categoria } from "./genius/service";
 
 type Props = {
   back: () => void;
@@ -9,7 +11,7 @@ const grupos = [
   {
     id: "textura",
     titulo: "Textura do cabelo",
-    opcoes: ["Cabelo Cacheado", "Cabelo Ondulado", "Cabelo Liso"],
+    opcoes: categorias.textura,
     surface: "bg-blue-50 border-blue-100 shadow-[0_5px_0_#a4c3f5,0_10px_18px_rgba(15,23,42,0.08)]",
     selected: "bg-blue-600 border-blue-700 text-white shadow-[0_5px_0_#1d4ed8]",
     dot: "bg-blue-500",
@@ -17,7 +19,7 @@ const grupos = [
   {
     id: "comprimento",
     titulo: "Comprimento do cabelo",
-    opcoes: ["Cabelo Curto", "Cabelo Médio", "Cabelo Longo"],
+    opcoes: categorias.comprimento,
     surface: "bg-orange-50 border-orange-100 shadow-[0_5px_0_#edb48e,0_10px_18px_rgba(15,23,42,0.08)]",
     selected: "bg-orange-600 border-orange-700 text-white shadow-[0_5px_0_#c2410c]",
     dot: "bg-orange-500",
@@ -25,7 +27,7 @@ const grupos = [
   {
     id: "olhos",
     titulo: "Olhos",
-    opcoes: ["Olhos Castanhos", "Olhos Azuis", "Olhos Verdes"],
+    opcoes: categorias.olhos,
     surface: "bg-green-50 border-green-100 shadow-[0_5px_0_#8fd5b1,0_10px_18px_rgba(15,23,42,0.08)]",
     selected: "bg-green-700 border-green-800 text-white shadow-[0_5px_0_#166534]",
     dot: "bg-green-500",
@@ -33,7 +35,7 @@ const grupos = [
   {
     id: "oculos",
     titulo: "Acessórios",
-    opcoes: ["Com Óculos", "Sem Óculos"],
+    opcoes: categorias.oculos,
     surface: "bg-slate-100 border-slate-200 shadow-[0_5px_0_#a8b3c3,0_10px_18px_rgba(15,23,42,0.08)]",
     selected: "bg-slate-600 border-slate-700 text-white shadow-[0_5px_0_#334155]",
     dot: "bg-slate-500",
@@ -101,8 +103,96 @@ function RostoOpcao({ grupo, indice }: { grupo: string; indice: number }) {
   );
 }
 
+function ResultadoGenius({ game, pending, onRestart, onClose }: {
+  game: Estado;
+  pending: boolean;
+  onRestart: () => void;
+  onClose: () => void;
+}) {
+  const dialog = useRef<HTMLDialogElement>(null);
+  const acertou = game.status === "descobriu";
+
+  useEffect(() => {
+    const elemento = dialog.current!;
+    const anterior = document.activeElement;
+    const overflowAnterior = document.body.style.overflow;
+    elemento.showModal();
+    document.body.style.overflow = "hidden";
+    return () => {
+      elemento.close();
+      document.body.style.overflow = overflowAnterior;
+      if (anterior instanceof HTMLElement && anterior.isConnected) anterior.focus();
+      else document.getElementById("genius-reiniciar")?.focus();
+    };
+  }, []);
+
+  return (
+    <dialog ref={dialog} onCancel={(event) => { event.preventDefault(); onClose(); }}
+      aria-labelledby="genius-resultado-titulo" aria-describedby="genius-resultado-descricao"
+      className="fixed inset-0 m-auto max-h-[calc(100dvh_-_2rem)] w-[calc(100%_-_2rem)] max-w-sm overflow-y-auto rounded-3xl border-0 bg-white p-7 text-center text-ink shadow-[0_30px_80px_rgba(15,23,42,0.3)] backdrop:bg-slate-900/40 backdrop:backdrop-blur-sm sm:p-8">
+      <span className={`mx-auto flex size-18 items-center justify-center rounded-full text-white ${acertou ? "bg-green-500 shadow-[0_5px_0_#15803d]" : "bg-orange-500 shadow-[0_5px_0_#c2410c]"}`}>
+        {acertou ? <Trophy size={34} aria-hidden="true" /> : <X size={36} aria-hidden="true" />}
+      </span>
+      <h2 id="genius-resultado-titulo" className="mt-6 text-2xl font-extrabold leading-tight">
+        {acertou ? "A máquina acertou!" : "Limite de tentativas"}
+      </h2>
+      <p id="genius-resultado-descricao" className="mt-3 text-sm leading-relaxed text-slate-500">
+        {acertou
+          ? `Ela descobriu suas características na tentativa ${String(game.usadas).padStart(2, "0")} de 06.`
+          : "A máquina usou as 6 tentativas e não descobriu. Você venceu!"}
+      </p>
+      {game.perfil && <ul aria-label="Perfil descoberto" className="mt-5 flex flex-wrap justify-center gap-1.5">
+        {grupos.map(grupo => <li key={grupo.id} className={`rounded-full px-2.5 py-1 text-xs font-bold text-white ${grupo.id === "textura" ? "bg-blue-600" : grupo.id === "comprimento" ? "bg-orange-600" : grupo.id === "olhos" ? "bg-green-700" : "bg-slate-600"}`}>
+          {game.perfil![grupo.id as Categoria]}
+        </li>)}
+      </ul>}
+      <button type="button" autoFocus disabled={pending} onClick={onRestart}
+        className="mt-7 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-blue-500 px-4 py-3 text-sm font-semibold text-white shadow-[0_5px_0_#1d4ed8,0_10px_20px_rgba(15,23,42,0.15)] active:translate-y-1 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-700 motion-reduce:transform-none">
+        <RotateCcw size={18} aria-hidden="true" /> Jogar de novo
+      </button>
+      <button type="button" onClick={onClose} className="mt-4 min-h-11 rounded-lg px-5 text-sm text-slate-500 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-blue-600">Outro jogo</button>
+    </dialog>
+  );
+}
+
 export default function GeniusGame({ back }: Props) {
-  const [selecoes, setSelecoes] = useState<Record<string, string>>({});
+  const [game, setGame] = useState<Estado | null>(null);
+  const [pending, setPending] = useState(false);
+  const [resultadoFechado, setResultadoFechado] = useState(false);
+  const [error, setError] = useState("");
+  const [modo, setModo] = useState(import.meta.env.VITE_GENIUS_MODE === "api" ? "api" : "local");
+  const local = useRef(criarServicoLocal());
+  const api = useRef(criarServicoApi(import.meta.env.VITE_API_URL ?? "http://localhost:8000"));
+  const ocupado = useRef(false);
+  const retry = useRef<() => Promise<void>>(async () => {});
+  async function executar(acao: () => Promise<Estado>) {
+    if (ocupado.current) return;
+    ocupado.current = true;
+    setPending(true);
+    setError("");
+    retry.current = () => executar(acao);
+    try {
+      const novoEstado = await acao();
+      setGame(novoEstado);
+      setResultadoFechado(false);
+    }
+    catch (e) { setError(e instanceof Error ? e.message : "Erro inesperado."); }
+    finally { ocupado.current = false; setPending(false); }
+  }
+  function iniciar(localForcado = false) {
+    if (ocupado.current) return;
+    if (localForcado) setModo("local");
+    const servico = localForcado || modo === "local" ? local.current : api.current;
+    void executar(() => servico.iniciarPartida());
+  }
+  const usadas = game?.usadas ?? 0;
+  const candidatos = game?.candidatos.length ?? 54;
+  const reducao = Math.round((1 - candidatos / 54) * 100);
+  const terminou = !!game && game.status !== "jogando";
+  const titulo = pending ? "Processando…" : !game ? "A máquina vai adivinhar suas características em até 6 tentativas."
+    : game.status === "descobriu" ? "A máquina descobriu seu perfil!"
+    : game.status === "limite" ? "Você venceu! A máquina atingiu o limite de perguntas."
+    : game.pergunta!.texto;
 
   return (
     <div className="min-h-dvh text-ink">
@@ -120,34 +210,37 @@ export default function GeniusGame({ back }: Props) {
             <h1 className="text-sm font-bold leading-snug tracking-tight sm:text-lg">Módulo Adivinhação: Perfil</h1>
             <span className="mt-1 inline-flex items-center gap-1.5 text-xs font-medium text-slate-600">
               <span className="size-1.5 rounded-full bg-slate-400" aria-hidden="true" />
-              Pronto para começar
+              {modo === "local" ? "Modo local" : "Modo API"} · {game ? terminou ? "Fim da partida" : "Em jogo" : "Pronto para começar"}
             </span>
           </div>
-          <span className="ml-auto rounded-full bg-blue-50 px-3 py-2 text-xs font-semibold tabular-nums text-blue-700" aria-label="Tentativas: zero de seis">
-            Tentativa 00/06
+          <span className="ml-auto rounded-full bg-blue-50 px-3 py-2 text-xs font-semibold tabular-nums text-blue-700" aria-label={`Tentativas: ${usadas} de seis`}>
+            Tentativa {String(usadas).padStart(2, "0")}/06
           </span>
         </div>
       </header>
 
       <main className="mx-auto grid max-w-5xl gap-6 px-4 py-6 sm:px-8 sm:py-8 md:grid-cols-[minmax(0,1fr)_15rem] md:items-start">
         <section aria-labelledby="genius-instrucoes" className="rounded-3xl border border-slate-100 bg-white p-5 shadow-[0_8px_24px_rgba(15,23,42,0.06)] sm:p-6">
-          <h2 id="genius-instrucoes" className="flex items-start gap-2 text-base font-bold leading-snug sm:text-lg">
+          <h2 aria-live="polite" id="genius-instrucoes" className="flex items-start gap-2 text-base font-bold leading-snug sm:text-lg">
             <span className="mt-2 size-2 shrink-0 rounded-full bg-slate-400" aria-hidden="true" />
-            A máquina vai adivinhar suas características em até 6 tentativas.
+            {titulo}
           </h2>
           <p className="mt-3 text-sm leading-relaxed text-slate-600">
-            Pense em um traço de cada categoria: textura e comprimento do cabelo, olhos e óculos.
+            {!game ? "Pense em um traço de cada categoria e mantenha o mesmo perfil durante a partida. Não precisa selecionar as opções."
+              : game.perfil ? Object.values(game.perfil).join(" · ")
+              : terminou ? `Ainda restam ${candidatos} perfis possíveis após seis respostas.`
+              : "Responda Sim ou Não sobre o perfil em que você pensou."}
           </p>
-          <div className="mt-4 grid grid-cols-6 gap-1.5" aria-label="Nenhuma das seis tentativas foi usada">
-            {Array.from({ length: 6 }, (_, i) => <span key={i} className="h-1 rounded-full bg-slate-200" />)}
+          <div className="mt-4 grid grid-cols-6 gap-1.5" aria-label={`${usadas} das seis perguntas respondidas`}>
+            {Array.from({ length: 6 }, (_, i) => <span key={i} className={`h-1 rounded-full ${i < usadas ? "bg-blue-500" : "bg-slate-200"}`} />)}
           </div>
         </section>
 
         <aside aria-labelledby="espaco-busca" className="rounded-3xl border border-slate-100 bg-white p-5 shadow-[0_8px_24px_rgba(15,23,42,0.06)] md:col-start-2 md:row-start-1">
           <h2 id="espaco-busca" className="text-xs font-semibold uppercase tracking-wide text-slate-600">Espaço de busca</h2>
-          <p className="mt-2 text-sm text-slate-600"><strong className="text-3xl font-extrabold tabular-nums text-ink">54</strong> / 54 candidatos</p>
-          <div className="mt-3 h-2 rounded-full bg-slate-100" aria-hidden="true" />
-          <p className="mt-3 text-xs leading-relaxed text-slate-600">Busca reduzida em <b>0%</b> · Restam no máximo <b>6 perguntas</b>.</p>
+          <p className="mt-2 text-sm text-slate-600"><strong className="text-3xl font-extrabold tabular-nums text-ink">{candidatos}</strong> / 54 candidatos</p>
+          <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100" aria-hidden="true"><div className="h-full bg-blue-500" style={{ width: `${reducao}%` }} /></div>
+          <p className="mt-3 text-xs leading-relaxed text-slate-600">Busca reduzida em <b>{reducao}%</b> · Restam no máximo <b>{6 - usadas} perguntas</b>.</p>
         </aside>
 
         <div className="flex min-w-0 flex-col gap-6 md:col-start-1">
@@ -159,32 +252,55 @@ export default function GeniusGame({ back }: Props) {
               </legend>
               <div className={`grid gap-2.5 sm:gap-4 ${grupo.opcoes.length === 2 ? "grid-cols-2" : "grid-cols-3"}`}>
                 {grupo.opcoes.map((opcao, indice) => {
-                  const selecionada = selecoes[grupo.id] === opcao;
+                  const categoria = grupo.id as Categoria;
+                  const selecionada = !!game && game.candidatos.every(p => p[categoria] === opcao);
+                  const perguntando = game?.pergunta?.categoria === categoria && game.pergunta.opcao === opcao;
+                  const eliminada = !!game && !game.candidatos.some(p => p[categoria] === opcao);
                   return (
-                    <button
-                      type="button"
+                    <div
                       key={opcao}
-                      aria-pressed={selecionada}
-                      onClick={() => setSelecoes((atual) => ({ ...atual, [grupo.id]: selecionada ? "" : opcao }))}
-                      className={`relative flex min-h-28 min-w-0 flex-col items-center justify-center gap-2 rounded-2xl border px-2 py-5 text-center text-xs font-bold leading-snug transition-[transform,background-color,color] duration-150 active:translate-y-1 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-600 motion-reduce:transform-none motion-reduce:transition-none sm:min-h-36 sm:px-4 sm:text-sm ${selecionada ? grupo.selected : grupo.surface}`}
+                      className={`relative flex min-h-28 min-w-0 flex-col items-center justify-center gap-2 rounded-2xl border px-2 py-5 text-center text-xs font-bold leading-snug transition-[transform,background-color,color] duration-150 active:translate-y-1 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-600 motion-reduce:transform-none motion-reduce:transition-none sm:min-h-36 sm:px-4 sm:text-sm ${selecionada || perguntando ? grupo.selected : grupo.surface} ${eliminada ? "opacity-40" : ""}`}
                     >
                       <RostoOpcao grupo={grupo.id} indice={indice} />
                       <span className="font-extrabold">{opcao}</span>
-                      {selecionada && <span className="inline-flex items-center gap-1 text-[10px] font-medium"><Check size={12} aria-hidden="true" /> Selecionado</span>}
-                    </button>
+                      {selecionada && <span className="inline-flex items-center gap-1 text-[10px] font-medium"><Check size={12} aria-hidden="true" /> Confirmado</span>}
+                      {perguntando && <span className="text-[10px] font-semibold">Em avaliação</span>}
+                      {eliminada && <span className="text-[10px]">Eliminado</span>}
+                    </div>
                   );
                 })}
               </div>
             </fieldset>
           ))}
 
-          <div className="pb-4">
-            <button type="button" className="flex min-h-12 w-full cursor-not-allowed items-center justify-center gap-2 rounded-xl bg-slate-700 px-5 py-3 text-sm font-semibold text-white shadow-[0_4px_0_#1e293b]">
-              <Play size={16} aria-hidden="true" /> Começar
+          <div className="space-y-4 pb-4" aria-busy={pending}>
+            {error && <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+              <p>{error}</p>
+              <button type="button" disabled={pending} onClick={() => void retry.current()} className="mt-3 min-h-11 rounded-lg border px-3 font-bold focus-visible:outline-2">Tentar novamente</button>
+              {modo === "api" && <button type="button" disabled={pending} onClick={() => iniciar(true)} className="mt-2 min-h-11 rounded-lg border px-3 font-bold focus-visible:outline-2">Iniciar nova partida local</button>}
+            </div>}
+            {game?.status === "jogando" && <div className="grid grid-cols-2 gap-3">
+              {[true, false].map(resposta => <button key={String(resposta)} type="button" disabled={pending || !!error}
+                onClick={() => void executar(() => (modo === "local" ? local.current : api.current).responder(game.id, resposta))}
+                className={`min-h-12 rounded-xl px-4 py-3 font-bold text-white disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-600 active:translate-y-0.5 motion-reduce:transform-none ${resposta ? "bg-green-700" : "bg-orange-700"}`}>
+                {resposta ? "Sim" : "Não"}
+              </button>)}
+            </div>}
+            <button id="genius-reiniciar" type="button" disabled={pending} onClick={() => iniciar()} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-slate-700 px-5 py-3 text-sm font-semibold text-white shadow-[0_4px_0_#1e293b] disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-600">
+              <Play size={16} aria-hidden="true" /> {pending ? "Aguarde…" : !game ? "Começar" : terminou ? "Jogar novamente" : "Reiniciar partida"}
             </button>
+            {game && <details className="rounded-xl bg-white p-4 text-sm">
+              <summary className="cursor-pointer font-bold">Histórico de perguntas ({usadas}/6)</summary>
+              <ol className="mt-3 space-y-2">{game.historico.map((passo, i) => <li key={i}>{i + 1}. {passo.pergunta.texto} <b>{passo.resposta ? "Sim" : "Não"}</b></li>)}</ol>
+            </details>}
           </div>
         </div>
       </main>
+      {terminou && !resultadoFechado && game && <ResultadoGenius
+        game={game} pending={pending}
+        onClose={back}
+        onRestart={() => { setResultadoFechado(true); iniciar(); }}
+      />}
     </div>
   );
 }

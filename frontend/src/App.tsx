@@ -191,16 +191,7 @@ function Menu({ go }: { go: (s: Screen) => void }) {
             tint: "bg-green-50",
             Icon: Brain,
           },
-          {
-            // ICONE: Genius
-            id: "genius" as const,
-            title: "Genius Característico",
-            sub: "A máquina vai adivinhar suas características em até 6 tentativas.",
-            color: GREEN,
-            tint: "bg-green-50",
-            Icon: Brain,
-          },
-          
+                    
         ].map(({ id, title, sub, color, tint, Icon }, i) => (
           <button
             key={id}
