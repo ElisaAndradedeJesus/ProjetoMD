@@ -10,6 +10,7 @@ import {
   Send,
   Trophy,
   Wand2,
+  Sparkles,
 } from "lucide-react";
 import {
   apiUrl, 
@@ -24,8 +25,9 @@ import {
   type resultado,
 } from "./api.ts";
 import { send } from "vite";
+import Akinator from "./Akinator.tsx";
 
-type Screen = "menu" | "player" | "machine";
+type Screen = "menu" | "player" | "machine" | "akinator";
 /*--type Hint = "maior" | "menor" | "acerto";--*/
 
 const BLUE = "#3b82f6";
@@ -174,6 +176,13 @@ function Menu({ go }: { go: (s: Screen) => void }) {
             color: ORANGE,
             tint: "bg-orange-50",
             Icon: Wand2,
+          },{
+            id: "akinator" as const,
+            title: "Akinator",
+            sub: "A máquina adivinha o perfil em que você pensou.",
+            color: "#2563eb",
+            tint: "bg-blue-100",
+            Icon: Sparkles,
           },
         ].map(({ id, title, sub, color, tint, Icon }, i) => (
           <button
@@ -916,6 +925,7 @@ export default function App() {
       {screen === "menu" && <Menu go={setScreen} />}
       {screen === "player" && <PlayerGame back={back} />}
       {screen === "machine" && <MachineGame back={back} />}
+      {screen === "akinator" && <Akinator back={back} />}
     </div>
   );
 }
