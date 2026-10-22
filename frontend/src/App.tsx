@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   ArrowUp,
   Bot,
+  Brain,
   Check,
   Delete,
   RotateCcw,
@@ -24,8 +25,9 @@ import {
   type resultado,
 } from "./api.ts";
 import { send } from "vite";
+import GeniusGame from "./GeniusGame";
 
-type Screen = "menu" | "player" | "machine";
+type Screen = "menu" | "player" | "machine" | "genius";
 /*--type Hint = "maior" | "menor" | "acerto";--*/
 
 const BLUE = "#3b82f6";
@@ -148,11 +150,14 @@ function Menu({ go }: { go: (s: Screen) => void }) {
           />
         ))}
       </div>
+
+    
       <h1 className="rise text-center text-[clamp(1.875rem,9.5vw,3.75rem)] font-extrabold leading-tight tracking-tight text-ink">
         Busca Binária:
         <br />
         <span className="text-slate-500">O Desafio</span>
       </h1>
+      
       <p className="rise mt-5 max-w-md text-center text-base text-slate-500 sm:text-lg" style={{ animationDelay: "80ms" }}>
         Encontre um número entre 1 e 100 em no máximo 7 tentativas. Escolha quem adivinha.
       </p>
@@ -160,6 +165,7 @@ function Menu({ go }: { go: (s: Screen) => void }) {
       <div className="mt-8 grid w-full max-w-3xl grid-cols-1 gap-4 sm:mt-12 sm:gap-6 sm:grid-cols-2 sm:gap-8">
         {[
           {
+            // ICONE: desafiar maquina
             id: "player" as const,
             title: "Desafiar a Máquina",
             sub: "Você adivinha o número secreto da máquina.",
@@ -168,6 +174,7 @@ function Menu({ go }: { go: (s: Screen) => void }) {
             Icon: Bot,
           },
           {
+            // ICONE: Maquina vidente
             id: "machine" as const,
             title: "Máquina Vidente",
             sub: "Pense num número e a máquina vai descobrir.",
@@ -175,6 +182,25 @@ function Menu({ go }: { go: (s: Screen) => void }) {
             tint: "bg-orange-50",
             Icon: Wand2,
           },
+          {
+            // ICONE: Genius
+            id: "genius" as const,
+            title: "Genius Característico",
+            sub: "A máquina vai adivinhar suas características em até 6 tentativas.",
+            color: GREEN,
+            tint: "bg-green-50",
+            Icon: Brain,
+          },
+          {
+            // ICONE: Genius
+            id: "genius" as const,
+            title: "Genius Característico",
+            sub: "A máquina vai adivinhar suas características em até 6 tentativas.",
+            color: GREEN,
+            tint: "bg-green-50",
+            Icon: Brain,
+          },
+          
         ].map(({ id, title, sub, color, tint, Icon }, i) => (
           <button
             key={id}
@@ -916,6 +942,7 @@ export default function App() {
       {screen === "menu" && <Menu go={setScreen} />}
       {screen === "player" && <PlayerGame back={back} />}
       {screen === "machine" && <MachineGame back={back} />}
+      {screen === "genius" && <GeniusGame back={back} />}
     </div>
   );
 }
