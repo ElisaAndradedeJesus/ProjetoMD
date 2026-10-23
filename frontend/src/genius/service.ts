@@ -24,22 +24,35 @@ export const perfis: Perfil[] = categorias.textura.flatMap(textura =>
   categorias.comprimento.flatMap(comprimento => categorias.olhos.flatMap(olhos =>
     categorias.oculos.map(oculos => ({ textura, comprimento, olhos, oculos })))));
 
-// Minimiza o maior grupo restante. Empates mantêm a ordem das categorias/opções.
+// Minimiza o maior grupo restante com desempate aleatório e abertura dinâmica.
 export function escolherPergunta(candidatos: Perfil[]): Pergunta | null {
-  let melhor: Pergunta | null = null;
-  let custo = Infinity;
+  if (candidatos.length <= 1) return null;
+
+  // Na 1ª pergunta: sorteia aleatoriamente entre qualquer categoria e opção
+  if (candidatos.length === perfis.length) {
+    const cats = Object.keys(categorias) as Categoria[];
+    const cat = cats[Math.floor(Math.random() * cats.length)];
+    const opcoes = categorias[cat];
+    const opcao = opcoes[Math.floor(Math.random() * opcoes.length)];
+    return { categoria: cat, opcao, texto: `O perfil possui ${opcao.toLocaleLowerCase("pt-BR")}?` };
+  }
+
+  let candidatas: Pergunta[] = [];
+  let menorCusto = Infinity;
   for (const categoria of Object.keys(categorias) as Categoria[]) {
     for (const opcao of categorias[categoria]) {
       const sim = candidatos.filter(p => p[categoria] === opcao).length;
       if (sim === 0 || sim === candidatos.length) continue;
       const piorGrupo = Math.max(sim, candidatos.length - sim);
-      if (piorGrupo < custo) {
-        custo = piorGrupo;
-        melhor = { categoria, opcao, texto: `O perfil possui ${opcao.toLocaleLowerCase("pt-BR")}?` };
+      if (piorGrupo < menorCusto) {
+        menorCusto = piorGrupo;
+        candidatas = [{ categoria, opcao, texto: `O perfil possui ${opcao.toLocaleLowerCase("pt-BR")}?` }];
+      } else if (piorGrupo === menorCusto) {
+        candidatas.push({ categoria, opcao, texto: `O perfil possui ${opcao.toLocaleLowerCase("pt-BR")}?` });
       }
     }
   }
-  return melhor;
+  return candidatas.length > 0 ? candidatas[Math.floor(Math.random() * candidatas.length)] : null;
 }
 
 export function criarServicoLocal(): ServicoGenius {
@@ -61,7 +74,7 @@ export function criarServicoLocal(): ServicoGenius {
       const pergunta = anterior.pergunta;
       const candidatos = anterior.candidatos.filter(p => (p[pergunta.categoria] === pergunta.opcao) === resposta);
       const usadas = anterior.usadas + 1;
-      const status = candidatos.length === 1 ? "descobriu" : usadas >= 6 ? "limite" : "jogando";
+      const status = candidatos.length === 1 ? "descobriu" : usadas >= 7 ? "limite" : "jogando";
       const estado: Estado = { id, status, usadas, candidatos,
         pergunta: status === "jogando" ? escolherPergunta(candidatos) : null,
         historico: [...anterior.historico, { pergunta, resposta }],

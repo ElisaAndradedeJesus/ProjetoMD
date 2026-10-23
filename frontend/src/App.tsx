@@ -186,7 +186,7 @@ function Menu({ go }: { go: (s: Screen) => void }) {
             // ICONE: Genius
             id: "genius" as const,
             title: "Genius Característico",
-            sub: "A máquina vai adivinhar suas características em até 6 tentativas.",
+            sub: "A máquina vai adivinhar suas características em até 7 tentativas.",
             color: GREEN,
             tint: "bg-green-50",
             Icon: Brain,
