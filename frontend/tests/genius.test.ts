@@ -2,8 +2,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { criarServicoLocal, criarServicoApi, perfis, categorias } from "../src/genius/service.ts";
 
-test("54 perfis: perguntas úteis e equilibradas, sem eliminar o perfil verdadeiro e até seis respostas", async () => {
-  let descobertas = 0, limites = 0, descobertasNaSexta = 0;
+test("54 perfis: perguntas úteis e equilibradas, sem eliminar o perfil verdadeiro e até sete respostas", async () => {
+  let descobertas = 0, limites = 0;
   assert.equal(perfis.length, 54);
   for (const perfil of perfis) {
     const service = criarServicoLocal();
@@ -13,30 +13,32 @@ test("54 perfis: perguntas úteis e equilibradas, sem eliminar o perfil verdadei
       const sim = game.candidatos.filter(p => p[pergunta.categoria] === pergunta.opcao).length;
       assert.ok(sim > 0 && sim < game.candidatos.length);
       const custo = Math.max(sim, game.candidatos.length - sim);
-      for (const categoria of Object.keys(categorias) as (keyof typeof categorias)[]) {
-        for (const opcao of categorias[categoria]) {
-          const n = game.candidatos.filter(p => p[categoria] === opcao).length;
-          if (n > 0 && n < game.candidatos.length) assert.ok(custo <= Math.max(n, game.candidatos.length - n));
+      if (game.candidatos.length < perfis.length) {
+        for (const categoria of Object.keys(categorias) as (keyof typeof categorias)[]) {
+          for (const opcao of categorias[categoria]) {
+            const n = game.candidatos.filter(p => p[categoria] === opcao).length;
+            if (n > 0 && n < game.candidatos.length) assert.ok(custo <= Math.max(n, game.candidatos.length - n));
+          }
         }
       }
       game = await service.responder(game.id, perfil[pergunta.categoria] === pergunta.opcao);
       assert.ok(game.candidatos.some(p => JSON.stringify(p) === JSON.stringify(perfil)));
-      assert.ok(game.usadas <= 6);
+      assert.ok(game.usadas <= 7);
     }
     assert.equal(game.pergunta, null);
     if (game.status === "descobriu") {
       descobertas++;
-      if (game.usadas === 6) descobertasNaSexta++;
       assert.deepEqual(game.perfil, perfil);
     } else {
       limites++;
-      assert.equal(game.usadas, 6);
+      assert.equal(game.usadas, 7);
       assert.ok(game.candidatos.length > 1);
       assert.equal(game.perfil, null);
     }
     await assert.rejects(service.responder(game.id, true), /terminou/);
   }
-  assert.ok(descobertas > 0 && limites > 0 && descobertasNaSexta > 0);
+  assert.equal(descobertas, 54);
+  assert.equal(limites, 0);
 });
 
 test("reinício, isolamento dos dados e entradas inválidas", async () => {

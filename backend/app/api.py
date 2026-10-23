@@ -14,12 +14,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from app.complexidade import log
-from app.jogos import DesafiarMaquina, MaquinaVidente
+from app.jogos import DesafiarMaquina, Genius, MaquinaVidente
 
 app = FastAPI(title="Busca Binária — Jogos", version="0.1.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
-partidas: dict[str, DesafiarMaquina | MaquinaVidente] = {}
+partidas: dict[str, DesafiarMaquina | MaquinaVidente | Genius] = {}
 
 
 class PalpiteIn(BaseModel):
@@ -28,6 +28,10 @@ class PalpiteIn(BaseModel):
 
 class FeedbackIn(BaseModel):
     feedback: Literal["maior", "menor", "acertou"]
+
+
+class RespostaIn(BaseModel):
+    resposta: bool
 
 
 def _buscar(partida_id: str, tipo: type):
@@ -87,3 +91,27 @@ def feedback(partida_id: str, body: FeedbackIn):
     except ValueError as e:
         raise HTTPException(400, str(e))
     return {"id": partida_id, **partida.estado()}
+
+
+# ---------- Modo 3: Genius Característico ----------
+@app.post("/genius", status_code=201)
+def novo_genius():
+    partida = Genius()
+    partidas[partida.id] = partida
+    return partida.estado()
+
+
+@app.get("/genius/{partida_id}")
+def estado_genius(partida_id: str):
+    return _buscar(partida_id, Genius).estado()
+
+
+@app.post("/genius/{partida_id}/resposta")
+def responder_genius(partida_id: str, body: RespostaIn):
+    partida = _buscar(partida_id, Genius)
+    try:
+        partida.responder(body.resposta)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    return partida.estado()
+

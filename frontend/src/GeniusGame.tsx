@@ -138,8 +138,8 @@ function ResultadoGenius({ game, pending, onRestart, onClose }: {
       </h2>
       <p id="genius-resultado-descricao" className="mt-3 text-sm leading-relaxed text-slate-500">
         {acertou
-          ? `Ela descobriu suas características na tentativa ${String(game.usadas).padStart(2, "0")} de 06.`
-          : "A máquina usou as 6 tentativas e não descobriu. Você venceu!"}
+          ? `Ela descobriu suas características na tentativa ${String(game.usadas).padStart(2, "0")} de 07.`
+          : "A máquina usou as 7 tentativas e não descobriu. Você venceu!"}
       </p>
       {game.perfil && <ul aria-label="Perfil descoberto" className="mt-5 flex flex-wrap justify-center gap-1.5">
         {grupos.map(grupo => <li key={grupo.id} className={`rounded-full px-2.5 py-1 text-xs font-bold text-white ${grupo.id === "textura" ? "bg-blue-600" : grupo.id === "comprimento" ? "bg-orange-600" : grupo.id === "olhos" ? "bg-green-700" : "bg-slate-600"}`}>
@@ -160,7 +160,7 @@ export default function GeniusGame({ back }: Props) {
   const [pending, setPending] = useState(false);
   const [resultadoFechado, setResultadoFechado] = useState(false);
   const [error, setError] = useState("");
-  const [modo, setModo] = useState(import.meta.env.VITE_GENIUS_MODE === "api" ? "api" : "local");
+  const [modo, setModo] = useState(import.meta.env.VITE_GENIUS_MODE === "local" ? "local" : "api");
   const local = useRef(criarServicoLocal());
   const api = useRef(criarServicoApi(import.meta.env.VITE_API_URL ?? "http://localhost:8000"));
   const ocupado = useRef(false);
@@ -189,7 +189,7 @@ export default function GeniusGame({ back }: Props) {
   const candidatos = game?.candidatos.length ?? 54;
   const reducao = Math.round((1 - candidatos / 54) * 100);
   const terminou = !!game && game.status !== "jogando";
-  const titulo = pending ? "Processando…" : !game ? "A máquina vai adivinhar suas características em até 6 tentativas."
+  const titulo = pending ? "Processando…" : !game ? "A máquina vai adivinhar suas características em até 7 tentativas."
     : game.status === "descobriu" ? "A máquina descobriu seu perfil!"
     : game.status === "limite" ? "Você venceu! A máquina atingiu o limite de perguntas."
     : game.pergunta!.texto;
@@ -208,13 +208,22 @@ export default function GeniusGame({ back }: Props) {
           </button>
           <div className="min-w-0 flex-1">
             <h1 className="text-sm font-bold leading-snug tracking-tight sm:text-lg">Módulo Adivinhação: Perfil</h1>
-            <span className="mt-1 inline-flex items-center gap-1.5 text-xs font-medium text-slate-600">
-              <span className="size-1.5 rounded-full bg-slate-400" aria-hidden="true" />
-              {modo === "local" ? "Modo local" : "Modo API"} · {game ? terminou ? "Fim da partida" : "Em jogo" : "Pronto para começar"}
-            </span>
+            <button
+              type="button"
+              onClick={() => {
+                const novo = modo === "api" ? "local" : "api";
+                setModo(novo);
+                iniciar(novo === "local");
+              }}
+              title="Clique para alternar entre Modo API e Modo Local"
+              className="mt-1 inline-flex items-center gap-1.5 rounded-md px-1.5 py-0.5 text-xs font-medium text-slate-600 hover:bg-slate-100 transition-colors"
+            >
+              <span className={`size-1.5 rounded-full ${modo === "api" ? "bg-green-500" : "bg-amber-500"}`} aria-hidden="true" />
+              {modo === "local" ? "Modo local" : "Modo API (FastAPI)"} · {game ? terminou ? "Fim da partida" : "Em jogo" : "Pronto para começar"}
+            </button>
           </div>
-          <span className="ml-auto rounded-full bg-blue-50 px-3 py-2 text-xs font-semibold tabular-nums text-blue-700" aria-label={`Tentativas: ${usadas} de seis`}>
-            Tentativa {String(usadas).padStart(2, "0")}/06
+          <span className="ml-auto rounded-full bg-blue-50 px-3 py-2 text-xs font-semibold tabular-nums text-blue-700" aria-label={`Tentativas: ${usadas} de sete`}>
+            Tentativa {String(usadas).padStart(2, "0")}/07
           </span>
         </div>
       </header>
@@ -228,11 +237,11 @@ export default function GeniusGame({ back }: Props) {
           <p className="mt-3 text-sm leading-relaxed text-slate-600">
             {!game ? "Pense em um traço de cada categoria e mantenha o mesmo perfil durante a partida. Não precisa selecionar as opções."
               : game.perfil ? Object.values(game.perfil).join(" · ")
-              : terminou ? `Ainda restam ${candidatos} perfis possíveis após seis respostas.`
+              : terminou ? `Ainda restam ${candidatos} perfis possíveis após sete respostas.`
               : "Responda Sim ou Não sobre o perfil em que você pensou."}
           </p>
-          <div className="mt-4 grid grid-cols-6 gap-1.5" aria-label={`${usadas} das seis perguntas respondidas`}>
-            {Array.from({ length: 6 }, (_, i) => <span key={i} className={`h-1 rounded-full ${i < usadas ? "bg-blue-500" : "bg-slate-200"}`} />)}
+          <div className="mt-4 grid grid-cols-7 gap-1.5" aria-label={`${usadas} das sete perguntas respondidas`}>
+            {Array.from({ length: 7 }, (_, i) => <span key={i} className={`h-1 rounded-full ${i < usadas ? "bg-blue-500" : "bg-slate-200"}`} />)}
           </div>
         </section>
 
@@ -240,7 +249,7 @@ export default function GeniusGame({ back }: Props) {
           <h2 id="espaco-busca" className="text-xs font-semibold uppercase tracking-wide text-slate-600">Espaço de busca</h2>
           <p className="mt-2 text-sm text-slate-600"><strong className="text-3xl font-extrabold tabular-nums text-ink">{candidatos}</strong> / 54 candidatos</p>
           <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100" aria-hidden="true"><div className="h-full bg-blue-500" style={{ width: `${reducao}%` }} /></div>
-          <p className="mt-3 text-xs leading-relaxed text-slate-600">Busca reduzida em <b>{reducao}%</b> · Restam no máximo <b>{6 - usadas} perguntas</b>.</p>
+          <p className="mt-3 text-xs leading-relaxed text-slate-600">Busca reduzida em <b>{reducao}%</b> · Restam no máximo <b>{7 - usadas} perguntas</b>.</p>
         </aside>
 
         <div className="flex min-w-0 flex-col gap-6 md:col-start-1">
@@ -290,7 +299,7 @@ export default function GeniusGame({ back }: Props) {
               <Play size={16} aria-hidden="true" /> {pending ? "Aguarde…" : !game ? "Começar" : terminou ? "Jogar novamente" : "Reiniciar partida"}
             </button>
             {game && <details className="rounded-xl bg-white p-4 text-sm">
-              <summary className="cursor-pointer font-bold">Histórico de perguntas ({usadas}/6)</summary>
+              <summary className="cursor-pointer font-bold">Histórico de perguntas ({usadas}/7)</summary>
               <ol className="mt-3 space-y-2">{game.historico.map((passo, i) => <li key={i}>{i + 1}. {passo.pergunta.texto} <b>{passo.resposta ? "Sim" : "Não"}</b></li>)}</ol>
             </details>}
           </div>
