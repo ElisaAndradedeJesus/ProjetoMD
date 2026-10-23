@@ -177,3 +177,4 @@ pnpm build
   Rode `npm install -g pnpm` ou utilize o Corepack: `corepack enable`.
 - **"Modo local ativado / Erro de conexão com a API"**:
   Confira se o Terminal 1 com o `uvicorn` ainda está rodando e acessível em `http://localhost:8000/health`. Se o backend for interrompido, o frontend automaticamente permite jogar no modo local offline sem quebrar.
+

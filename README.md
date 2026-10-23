@@ -12,7 +12,7 @@ O projeto conta com 3 modalidades:
 ## 🚀 Como Rodar o Projeto?
 
 Consulte o nosso guia passo a passo completo:
-👉 **[Guia de Execução (Backend + Frontend)](COMO_RODAR.md)**
+👉 **[Guia de Execução (Backend + Frontend)](guia_como_rodar.md)**
 
 ---
 
