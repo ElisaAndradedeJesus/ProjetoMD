@@ -1,18 +1,19 @@
 # Busca Binária — Jogos de Adivinhação
 
-Monorepo do trabalho de Matemática Discreta. Dois modos de jogo para estudar complexidade (Big O):
+Monorepo do trabalho de Matemática Discreta. Modos de jogo para estudar complexidade (Big O):
 
 | Modo | Quem adivinha | Intervalo | Tentativas | Complexidade |
 |---|---|---|---|---|
 | **Desafiar a Máquina** | o usuário | 1–100 | 7 | O(1) por palpite, O(k) por partida |
 | **Máquina Vidente** | a máquina (busca binária) | 0–100 | 7 | O(log n) por partida |
+| **Akinator** | a máquina (perguntas de sim/não) | 24 perfis | até 16 perguntas | ~⌈log2 n⌉ perguntas, O(k · n) por pergunta |
 
 Por que 7 tentativas? A busca binária corta o intervalo pela metade a cada palpite.
 Para 101 números: 101 → 50 → 25 → 12 → 6 → 3 → 1. Isso dá ⌈log2(101+1)⌉ = **7** passos no pior caso.
 
 ```
 .
-├── backend/            API em Python (FastAPI)
+├── backend/            API em Python (FastAPI) + API do Akinator em Node.js (Express)
 │   ├── app/
 │   │   ├── complexidade.py      contador de operações + prints [BIG-O]
 │   │   ├── jogos/
@@ -21,6 +22,15 @@ Para 101 números: 101 → 50 → 25 → 12 → 6 → 3 → 1. Isso dá ⌈log2(
 │   │   ├── api.py               rotas HTTP
 │   │   ├── cli.py               jogar pelo terminal
 │   │   └── analise.py           linear O(n) x binária O(log n)
+│   ├── src/                     Akinator (TypeScript)
+│   │   ├── akinator/
+│   │   │   ├── akinator.data.ts     24 perfis e 16 traços (os mesmos do frontend)
+│   │   │   ├── akinator.dto.ts      contratos JSON das rotas
+│   │   │   ├── akinator.engine.ts   motor de dedução
+│   │   │   └── akinator.routes.ts   rotas HTTP
+│   │   ├── complexidade.ts      versão TS do contador [BIG-O]
+│   │   ├── app.ts
+│   │   └── server.ts
 │   └── tests/
 └── frontend/           (próxima etapa)
 ```
@@ -64,6 +74,34 @@ Para desligar os prints: `BIGO_VERBOSE=0`.
 
 Toda resposta traz um campo `complexidade` com as operações contadas e o tempo em ms.
 
+## Akinator (Node.js + TypeScript)
+
+O usuário pensa em um dos 24 perfis e a máquina pergunta sobre traços (cabelo curto, óculos, chapéu...).
+Cada pergunta usa o traço que divide os perfis ainda possíveis mais perto da metade. Com 24 perfis, o ideal
+seria ⌈log2 24⌉ = **5** perguntas; respondendo com sinceridade, a máquina acerta todos os 24 com 4 ou 5 (média 4,67).
+
+Respostas "Provavelmente" não eliminam de cara: cada contradição soma um custo (Sim/Não = 3,
+Provavelmente = 1,5, Não Sei = 0) e o perfil sai quando o custo chega a 3.
+
+```bash
+npm i -g pnpm        # só na primeira vez
+cd backend
+pnpm install
+pnpm dev             # API em http://localhost:3001 (outra porta: PORT=4000)
+pnpm test            # testes do motor e das rotas
+pnpm typecheck       # confere os tipos
+```
+
+Endpoints (contratos completos em `src/akinator/akinator.dto.ts`):
+- `GET  /api/akinator/people` → os 24 perfis
+- `POST /api/akinator/start` → cria partida, já com a primeira pergunta
+- `POST /api/akinator/answer` body `{"sessionId": "...", "questionKey": "sorriso", "answer": "sim"}` → próxima pergunta ou o palpite (`phase: "palpite"`, com `confidence`). `answer` aceita `sim`, `nao`, `nsei`, `psim` e `pnao`
+- `POST /api/akinator/confirm` body `{"sessionId": "...", "correct": true}` → fecha a partida (`phase: "fim"`)
+
+Erros voltam como `{"detail": "..."}` (400, 404 ou 409), o mesmo formato da API em Python.
+O `Akinator.tsx` do frontend lê `VITE_API_URL`, a mesma variável dos modos em Python: para usar os dois
+backends juntos, o frontend precisa de uma variável própria ou de um proxy `/api` → `localhost:3001` no Vite.
+
 ## Análise de complexidade
 
 | Operação | Custo | Por quê |
@@ -75,6 +113,8 @@ Toda resposta traz um campo `complexidade` com as operações contadas e o tempo
 | Buscar partida pelo id | O(1) médio | dicionário (hash table) |
 | Partida da Máquina Vidente | **O(log n)** | o intervalo cai pela metade a cada passo |
 | Busca linear (comparação) | O(n) | testa número por número |
+| Akinator: atualizar custos após uma resposta | O(n) | um custo por perfil |
+| Akinator: escolher a próxima pergunta | O(k · n) | para cada traço restante, conta quantos possíveis o têm |
 
 Resultado de `python -m app.analise` (pior caso, nº de comparações):
 
