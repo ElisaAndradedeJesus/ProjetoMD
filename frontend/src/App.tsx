@@ -4,12 +4,14 @@ import {
   ArrowLeft,
   ArrowUp,
   Bot,
+  Brain,
   Check,
   Delete,
   RotateCcw,
   Send,
   Trophy,
   Wand2,
+  Sparkles,
 } from "lucide-react";
 import {
   apiUrl, 
@@ -23,9 +25,12 @@ import {
   type EstadoVidente,
   type resultado,
 } from "./api.ts";
-import { send } from "vite";
+import GeniusGame from "./GeniusGame";
 
-type Screen = "menu" | "player" | "machine";
+
+import Akinator from "./Akinator.tsx";
+
+type Screen = "menu" | "player" | "machine" | "genius" | "akinator";
 /*--type Hint = "maior" | "menor" | "acerto";--*/
 
 const BLUE = "#3b82f6";
@@ -148,33 +153,55 @@ function Menu({ go }: { go: (s: Screen) => void }) {
           />
         ))}
       </div>
+
+    
       <h1 className="rise text-center text-[clamp(1.875rem,9.5vw,3.75rem)] font-extrabold leading-tight tracking-tight text-ink">
         Busca Binária:
         <br />
         <span className="text-slate-500">O Desafio</span>
       </h1>
+      
       <p className="rise mt-5 max-w-md text-center text-base text-slate-500 sm:text-lg" style={{ animationDelay: "80ms" }}>
-        Encontre um número entre 1 e 100 em no máximo 7 tentativas. Escolha quem adivinha.
+        Explore três níveis: números, características e personagens. Escolha seu desafio.
       </p>
 
       <div className="mt-8 grid w-full max-w-3xl grid-cols-1 gap-4 sm:mt-12 sm:gap-6 sm:grid-cols-2 sm:gap-8">
         {[
           {
+            // ICONE: desafiar maquina
             id: "player" as const,
-            title: "Desafiar a Máquina",
+            title: "Nível 1 · Desafiar a Máquina",
             sub: "Você adivinha o número secreto da máquina.",
             color: BLUE,
             tint: "bg-blue-50",
             Icon: Bot,
           },
           {
+            // ICONE: Maquina vidente
             id: "machine" as const,
-            title: "Máquina Vidente",
+            title: "Nível 1 · Máquina Vidente",
             sub: "Pense num número e a máquina vai descobrir.",
             color: ORANGE,
             tint: "bg-orange-50",
             Icon: Wand2,
+          },{
+            id: "akinator" as const,
+            title: "Nível 3 · Akinator",
+            sub: "A máquina adivinha o perfil em que você pensou.",
+            color: "#2563eb",
+            tint: "bg-blue-100",
+            Icon: Sparkles,
           },
+          {
+            // ICONE: Genius
+            id: "genius" as const,
+            title: "Nível 2 · Genius Característico",
+            sub: "A máquina vai adivinhar suas características em até 7 tentativas.",
+            color: GREEN,
+            tint: "bg-green-50",
+            Icon: Brain,
+          },
+                    
         ].map(({ id, title, sub, color, tint, Icon }, i) => (
           <button
             key={id}
@@ -878,7 +905,7 @@ function MachineGame({ back }: { back: () => void }) {
                   color={color}
                   edge={edge}
                   depth={main ? 7 : 6}
-                  disabled={done}
+                  disabled={over || sending}
                   onClick={() => answer(k)}
                   className={`flex flex-col items-center justify-center gap-1 rounded-2xl px-2 sm:gap-1.5 sm:rounded-3xl text-white hover:brightness-105 ${
                     main ? "order-first col-span-2 min-h-16 sm:order-none sm:col-span-1 sm:min-h-32" : "min-h-16 sm:min-h-28"
@@ -916,6 +943,8 @@ export default function App() {
       {screen === "menu" && <Menu go={setScreen} />}
       {screen === "player" && <PlayerGame back={back} />}
       {screen === "machine" && <MachineGame back={back} />}
+      {screen === "genius" && <GeniusGame back={back} />}
+      {screen === "akinator" && <Akinator back={back} />}
     </div>
   );
 }

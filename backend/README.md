@@ -1,86 +1,59 @@
-# Busca Binária — Jogos de Adivinhação
+# API dos jogos
 
-Monorepo do trabalho de Matemática Discreta. Dois modos de jogo para estudar complexidade (Big O):
-
-| Modo | Quem adivinha | Intervalo | Tentativas | Complexidade |
-|---|---|---|---|---|
-| **Desafiar a Máquina** | o usuário | 1–100 | 7 | O(1) por palpite, O(k) por partida |
-| **Máquina Vidente** | a máquina (busca binária) | 0–100 | 7 | O(log n) por partida |
-
-Por que 7 tentativas? A busca binária corta o intervalo pela metade a cada palpite.
-Para 101 números: 101 → 50 → 25 → 12 → 6 → 3 → 1. Isso dá ⌈log2(101+1)⌉ = **7** passos no pior caso.
-
-```
-.
-├── backend/            API em Python (FastAPI)
-│   ├── app/
-│   │   ├── complexidade.py      contador de operações + prints [BIG-O]
-│   │   ├── jogos/
-│   │   │   ├── desafiar_maquina.py
-│   │   │   └── maquina_vidente.py
-│   │   ├── api.py               rotas HTTP
-│   │   ├── cli.py               jogar pelo terminal
-│   │   └── analise.py           linear O(n) x binária O(log n)
-│   └── tests/
-└── frontend/           (próxima etapa)
-```
-
-## Rodando o backend
+A API principal usa Python 3.10+ e FastAPI. Ela atende todos os níveis em http://localhost:8000. Siga a [instalação na raiz](../README.md#começar).
 
 ```bash
-cd backend
-python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-
-python -m app.cli                  # jogar no terminal vendo os prints de Big O
-python -m app.analise              # tabela comparando busca linear e binária
-uvicorn app.api:app --reload       # API em http://localhost:8000/docs
-python -m pytest                   # testes
+# dentro de backend, com .venv ativado
+python -m uvicorn app.api:app --reload
+python -m pytest -q
+python -m app.cli
+python -m app.analise
+python -m app.analise_akinator
 ```
 
-## Rodando o backend no Ubuntu
+A CLI oferece os jogos numéricos e o Genius. O Akinator tem interface web. `BIGO_VERBOSE=0` desativa os logs de operações. A análise do Akinator compara perguntas equilibradas, ordem fixa, aleatórias e busca linear.
+
+## Rotas principais
+
+| Operação | Rota | Corpo JSON |
+| --- | --- | --- |
+| Saúde | `GET /health` | — |
+| Criar desafio | `POST /desafiar-maquina` | — |
+| Palpitar | `POST /desafiar-maquina/{id}/palpite` | `{"numero": 50}` |
+| Criar vidente | `POST /maquina-vidente` | — |
+| Responder vidente | `POST /maquina-vidente/{id}/feedback` | `{"feedback": "maior"}` (ou `menor`, `acertou`) |
+| Criar Genius | `POST /genius` | — |
+| Confirmar perfil do Genius | `POST /genius/{id}/confirmacao` | `{"acertou": true}` (ou `false`) |
+| Responder Genius | `POST /genius/{id}/resposta` | `{"resposta": true}` (ou `false`) |
+| Listar personagens | `GET /akinator/personagens` | — |
+| Criar Akinator | `POST /akinator` | — |
+| Responder Akinator | `POST /akinator/{id}/resposta` | `{"resposta": "sim"}` (ou `nao`, `nsei`, `psim`, `pnao`) |
+| Confirmar palpite | `POST /akinator/{id}/confirmacao` | `{"acertou": true}` |
+| Árvore | `GET /akinator/arvore?estrategia=metade` | — |
+| Comparar estratégias | `GET /akinator/analise` | — |
+
+Cada jogo também oferece `GET /<jogo>/{id}` para consultar a sessão. Consulte os schemas em `/docs`. Sessões ficam em memória; não rode múltiplos workers para a demonstração. Erros de sessão retornam 404; ações inválidas, 400; corpos inválidos, 422.
+
+## Matemática e custo computacional
+
+- **Desafio:** comparação O(1) por palpite, O(k) para k palpites e histórico O(k). O jogador pode usar busca binária, mas o jogo não impõe essa estratégia.
+- **Vidente:** o intervalo de 101 números diminui pela metade; no máximo 7 palpites. O algoritmo de busca usa O(log n) passos e histórico O(log n). A serialização do histórico e os logs têm custo adicional.
+- **Genius:** produto cartesiano 3 × 3 × 3 × 2 = 54 perfis. Perguntas testam uma opção de uma categoria; cada categoria ternária exige no máximo duas respostas e a binária, uma: 2 + 2 + 2 + 1 = 7. A primeira pergunta varia; depois o critério minimax minimiza o maior grupo restante. O limite de perguntas não é o custo de CPU: avaliar q perguntas sobre c candidatos custa O(q·c), além de filtrar e serializar candidatos. O jogo mantém O(n + k) dados de candidatos/histórico, com quantidade fixa de atributos.
+- **Akinator:** a árvore equilibrada dos 24 personagens tem altura 5 e média próxima de 4,67 perguntas com Sim/Não coerentes. O limite informacional é ⌈log₂(24)⌉ = 5; traços arbitrários nem sempre permitem atingir esse limite. O motor avalia traços e candidatos, portanto contar perguntas não equivale a medir o tempo total de execução. Respostas incertas podem sair do caminho da árvore.
+
+Tempos medidos variam com máquina e instrumentação. Os contadores registram operações explícitas, sem substituir uma análise completa de CPU/memória.
+
+## Akinator alternativo em TypeScript
+
+A entrega de `feature/backend-akinator` foi preservada em `backend/src`, com Express, testes e contrato próprio. **A interface integrada usa a implementação Python.** Para estudar a alternativa:
 
 ```bash
-sudo apt install python3-venv python3-pip   # só na primeira vez
-cd backend
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+corepack pnpm install --frozen-lockfile
+corepack pnpm typecheck
+corepack pnpm test
+corepack pnpm dev
 ```
 
-Para desligar os prints: `BIGO_VERBOSE=0`.
+Porta padrão 3001. Rotas: `GET /api/akinator/people`, `POST /api/akinator/start`, `/answer` e `/confirm`. Os corpos e respostas estão em `src/akinator/akinator.dto.ts`; eles diferem da API Python. Não substitua `VITE_API_URL` por essa porta para apresentar o projeto completo.
 
-## Endpoints
-
-**Desafiar a Máquina**
-- `POST /desafiar-maquina` → cria partida (a máquina sorteia o número)
-- `POST /desafiar-maquina/{id}/palpite` body `{"numero": 27}` → responde `maior`, `menor` ou `acertou`
-- `GET  /desafiar-maquina/{id}` → estado e histórico. O `segredo` só aparece quando a partida termina.
-
-**Máquina Vidente**
-- `POST /maquina-vidente` → cria partida, já com o primeiro palpite (50)
-- `POST /maquina-vidente/{id}/feedback` body `{"feedback": "maior" | "menor" | "acertou"}`
-- `GET  /maquina-vidente/{id}` → estado, intervalo ativo, candidatos, histórico e "pensamento" de cada passo
-
-Toda resposta traz um campo `complexidade` com as operações contadas e o tempo em ms.
-
-## Análise de complexidade
-
-| Operação | Custo | Por quê |
-|---|---|---|
-| Sortear o número | O(1) | `random.randint` |
-| Avaliar um palpite | O(1) | no máximo 2 comparações |
-| Calcular o meio do intervalo | O(1) | `(baixo + alto) // 2` |
-| Guardar no histórico | O(1) amortizado | `list.append` |
-| Buscar partida pelo id | O(1) médio | dicionário (hash table) |
-| Partida da Máquina Vidente | **O(log n)** | o intervalo cai pela metade a cada passo |
-| Busca linear (comparação) | O(n) | testa número por número |
-
-Resultado de `python -m app.analise` (pior caso, nº de comparações):
-
-| n | linear O(n) | binária O(log n) |
-|---:|---:|---:|
-| 100 | 100 | 7 |
-| 1.000 | 1.000 | 10 |
-| 1.000.000 | 1.000.000 | 20 |
-| 1.000.000.000 | 1.000.000.000 | 30 |
+No Genius, sobrar um candidato muda o status para `palpite`. A confirmação leva a `descobriu` ou `sem_correspondencia` (perfil rejeitado, sem vencedor); ela não consome uma das sete perguntas. Inclusive uma sequência de sete respostas Não requer confirmação: exclusão de características pode deduzir um perfil, mas a vitória depende do participante confirmar esse perfil.

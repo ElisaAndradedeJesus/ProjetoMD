@@ -96,9 +96,9 @@ não conseguem impedir mudanças na `main`.
 
 ## O que ainda vamos adicionar?
 
-Por enquanto, a verificação automática só confere o título do pedido.
-Quando escolhermos a linguagem e as ferramentas, poderemos incluir verificações
-que executam o programa e procuram erros antes de aceitar mudanças.
+O workflow `Validar projeto` executa os testes Python, o build/testes do frontend
+e os testes/tipos do backend TypeScript. Essas verificações complementam
+a revisão humana e podem ser configuradas como obrigatórias no ruleset.
 
 Quem revisa também deve conferir mudanças na pasta `.github/`: é nela que ficam
 as regras e a verificação. Não mude o nome `pr-policy` sem atualizar a regra que

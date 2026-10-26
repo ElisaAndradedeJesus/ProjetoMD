@@ -1,143 +1,46 @@
-# O que há no nosso Frontend?
+# Frontend — três níveis de adivinhação
 
-Interface do jogo da busca binária, feita com React, Vite e Tailwind CSS.
-Há dois modos: **Desafiar a Máquina** (você adivinha um número de 1 a 100 em até 7 tentativas) e **Máquina Vidente** (você pensa em um número e a máquina descobre).
+React 19, TypeScript, Vite e Tailwind CSS. O menu reúne os dois jogos numéricos, Genius e Akinator. Todos usam a API Python por padrão.
 
-## Tecnologias
+## Executar
 
-- [React 19](https://react.dev/)
-- [Vite](https://vite.dev/)
-- [Tailwind CSS 4](https://tailwindcss.com/)
-- [TypeScript](https://www.typescriptlang.org/)
-- [lucide-react](https://lucide.dev/) (ícones)
-- [pnpm](https://pnpm.io/) como gerenciador de pacotes
-
-## Pré-requisitos
-
-Instale uma vez em cada computador:
-
-1. **Git** — https://git-scm.com
-2. **Node.js LTS (24.22.0)** — https://nodejs.org
-   Na instalação, deixe as opções padrão (com "Add to PATH" marcado). Depois, feche e abra o VS Code.
-3. **pnpm** — no terminal, rode:
-   ```bash
-   npm i -g pnpm
-   ```
-
-Confira se tudo foi instalado:
+Com Node.js 24 e pnpm 12.14.0, na pasta `frontend`:
 
 ```bash
-git -v
-node -v
-pnpm -v
+corepack pnpm install --frozen-lockfile
+corepack pnpm dev --host 127.0.0.1
 ```
 
-Os três comandos devem mostrar uma versão.
+Abra http://localhost:5173 e mantenha a API em http://localhost:8000. Não é necessário criar outro worktree.
+Veja a [instalação completa](../README.md).
 
-## Primeira vez: baixar e rodar
+## Configurar
 
-1. Baixe o repositório (se ainda não o tem na máquina):
-   ```bash
-   git clone https://github.com/ElisaAndradedeJesus/ProjetoMD.git
-   cd ProjetoMD
-   ```
-   Se já tem o repositório, entre na pasta dele e rode `git fetch`.
+Opcionalmente crie `frontend/.env.local` (não enviar ao Git):
 
-2. Vá para a branch de trabalho e atualize:
-   ```bash
-   git checkout NOME-DA-BRANCH
-   git pull
-   ```
+```dotenv
+VITE_API_URL=http://localhost:8000
+VITE_GENIUS_MODE=api
+```
 
-3. Instale as dependências e rode o projeto:
-   ```bash
-   cd frontend
-   pnpm install
-   pnpm dev
-   ```
+Reinicie o Vite depois de mudar variáveis. No build, as variáveis ficam incorporadas aos arquivos gerados.
+`VITE_GENIUS_MODE=local` ativa o Genius no navegador. O botão de modo também inicia uma nova partida no modo escolhido. Os demais jogos precisam da API.
 
-4. Abra no navegador o endereço que aparecer no terminal (normalmente http://localhost:5173).
-
-Para parar o servidor, use `Ctrl+C` no terminal.
-
-## Comandos
-
-Rode dentro da pasta `frontend/`:
-
-| Comando        | O que faz                                          |
-| -------------- | -------------------------------------------------- |
-| `pnpm dev`     | Inicia o servidor de desenvolvimento               |
-| `pnpm build`   | Gera a versão de produção na pasta `dist/`         |
-| `pnpm preview` | Abre localmente a versão gerada pelo `pnpm build`  |
-
-## Rotina do dia a dia
-
-Antes de começar a mexer:
+## Conferir
 
 ```bash
-git pull
+corepack pnpm test
+corepack pnpm typecheck
+corepack pnpm build
+corepack pnpm preview --host 127.0.0.1
 ```
 
-Se o `package.json` ou o `pnpm-lock.yaml` mudaram, rode `pnpm install` de novo dentro de `frontend/`.
+Os testes percorrem os 54 perfis do Genius, conferem isolamento/reinício de sessões e o contrato HTTP do adaptador. O build também verifica os tipos.
 
-Antes de enviar suas alterações:
+## Jogar
 
-```bash
-pnpm build        # confirma que o projeto compila
-git status        # confirma o que vai entrar no commit
-git add frontend
-git commit -m "descreva a mudança"
-git push
-```
+- Nível 1: palpites de 1 a 100 no desafio; na Máquina Vidente, pense em 0 a 100 e informe se seu número é maior, menor ou igual ao palpite.
+- Nível 2: mantenha uma característica de cada categoria; as 54 combinações podem ser identificadas em até sete respostas coerentes. Ao sobrar um perfil, confira as características e escolha “Sim, acertou” ou “Não é esse perfil”; a máquina só ganha com sua confirmação. Rejeitar o único perfil restante encerra a partida sem vencedor, com um aviso de que as respostas não correspondem a um perfil disponível.
+- Nível 3: escolha um personagem da lista exibida pelo Akinator. Respostas Sim/Não permitem acompanhar o caminho na árvore; respostas incertas usam a dedução do motor.
 
-## Regras para trabalhar em dupla
-
-- **Use sempre pnpm**, nunca `npm install` nem `yarn`. O `npm install` cria um `package-lock.json` que conflita com o `pnpm-lock.yaml`.
-- **Não faça commit de `node_modules/`, `dist/` nem arquivos `.env`.** O `.gitignore` já protege, mas confira o `git status` antes de commitar.
-- **Faça commit do `pnpm-lock.yaml`** sempre que ele mudar (depois de instalar ou remover uma biblioteca).
-- **Combinar no que mexer antes de realizar as mudanças de fato** isso será feito para evitar conflitos.
-- **Faça `git pull` antes de começar** e commits pequenos e frequentes.
-
-## Problemas comuns
-
-**`node` ou `pnpm` não é reconhecido?**
-Feche e abra o VS Code por completo. Se continuar, reinicie o computador.
-
-**No PowerShell: "a execução de scripts foi desabilitada neste sistema"**
-Rode uma vez:
-```powershell
-Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
-```
-e confirme com `S`.
-
-**Erro estranho depois de um `git pull`**
-Apague a pasta `node_modules` e rode `pnpm install` de novo.
-
-**A porta 5173 já está em uso?**
-Feche o outro servidor que está rodando, ou o Vite escolherá outra porta e mostrará no terminal qual é.
-
-**Rodando juntamente com o backend**
-
-Dentro da pasta do projetoMD rode:
-```
-git fetch
-git worktree add ../ProjetoMD-backend origin/staging
-```
-
-Confirme se os documentos da branch staging esteja localizada na pasta ProjetoMD-backend
-
-Com isso, crie um terminal dentro da pasta referida acima e rode os seguintes comandos:
-```
-cd backend
-python -m venv .venv && source .venv/bin/activate 
-pip install -r requirements.txt
-uvicorn app.api:app --reload
-```
-
-Crie um terminal na pasta ProjetoMD e rode
-```
-cd frontend
-pnpm install
-pnpm dev
-```
-
+Falha de conexão: confira `/health`, a porta 8000 e `VITE_API_URL`. Se a API foi reiniciada, volte ao menu e abra outra partida.
