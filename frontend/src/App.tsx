@@ -11,6 +11,7 @@ import {
   Send,
   Trophy,
   Wand2,
+  Sparkles,
 } from "lucide-react";
 import {
   apiUrl, 
@@ -24,10 +25,12 @@ import {
   type EstadoVidente,
   type resultado,
 } from "./api.ts";
-import { send } from "vite";
 import GeniusGame from "./GeniusGame";
 
-type Screen = "menu" | "player" | "machine" | "genius";
+
+import Akinator from "./Akinator.tsx";
+
+type Screen = "menu" | "player" | "machine" | "genius" | "akinator";
 /*--type Hint = "maior" | "menor" | "acerto";--*/
 
 const BLUE = "#3b82f6";
@@ -181,6 +184,13 @@ function Menu({ go }: { go: (s: Screen) => void }) {
             color: ORANGE,
             tint: "bg-orange-50",
             Icon: Wand2,
+          },{
+            id: "akinator" as const,
+            title: "Akinator",
+            sub: "A máquina adivinha o perfil em que você pensou.",
+            color: "#2563eb",
+            tint: "bg-blue-100",
+            Icon: Sparkles,
           },
           {
             // ICONE: Genius
@@ -934,6 +944,7 @@ export default function App() {
       {screen === "player" && <PlayerGame back={back} />}
       {screen === "machine" && <MachineGame back={back} />}
       {screen === "genius" && <GeniusGame back={back} />}
+      {screen === "akinator" && <Akinator back={back} />}
     </div>
   );
 }

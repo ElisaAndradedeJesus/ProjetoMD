@@ -97,3 +97,95 @@ export const iniciarVidente = () => post<EstadoVidente>("/maquina-vidente");
 
 export const enviarFeedback = (id: string, feedback: resultado) =>
   post<EstadoVidente>(`/maquina-vidente/${id}/feedback`, { feedback });
+
+/* ---------- Modo 3: Akinator ---------- */
+
+export type RespostaAkinator = "sim" | "nao" | "nsei" | "psim" | "pnao";
+export type Divisao = { sim: number; nao: number };
+
+export type PersonagemApi = { name: string; traits: string[] };
+
+export type EstadoAkinator = {
+    id: string;
+    modo: "akinator";
+    status: "jogando" | "palpite" | "acertou" | "errou";
+    pergunta_atual: {
+        traco: string;
+        rotulo: string;
+        texto: string;
+        numero: number;
+        divisao: Divisao;
+    } | null;
+    perguntas_feitas: number;
+    total_perguntas: number;
+    candidatos_restantes: string[];
+    quantidade_restantes: number;
+    historico: {
+        traco: string;
+        resposta: RespostaAkinator;
+        candidatos_antes: number;
+        candidatos_depois: number;
+        divisao: Divisao;
+    }[];
+    palpite: PersonagemApi | null;
+    /** null se teve "não sei"/"provavelmente". */
+    caminho_na_arvore: ("sim" | "nao")[] | null;
+};
+
+export type EstrategiaAkinator = "metade" | "ordem_fixa" | "aleatoria";
+
+export type NoArvore =
+    | {
+          tipo: "pergunta";
+          profundidade: number;
+          candidatos: number;
+          traco: string;
+          rotulo: string;
+          texto: string;
+          nomes: string[];
+          sim: NoArvore;
+          nao: NoArvore;
+      }
+    | {
+          tipo: "palpite";
+          profundidade: number;
+          candidatos: number;
+          personagem: string;
+          nomes: string[];
+      };
+
+export type EstatisticasArvore = {
+    personagens: number;
+    altura: number;
+    melhor_caso: number;
+    media_perguntas: number;
+    limite_teorico: number;
+    nos_pergunta?: number;
+    folhas?: number;
+};
+
+export type ArvoreAkinator = {
+    estrategia: EstrategiaAkinator;
+    estatisticas: EstatisticasArvore;
+    arvore: NoArvore;
+};
+
+export type LinhaAnalise = { base: string } & Record<
+    "linear" | "ordem_fixa" | "aleatoria" | "metade",
+    EstatisticasArvore
+>;
+
+export const listarPersonagens = () => request<PersonagemApi[]>("/akinator/personagens");
+
+export const iniciarAkinator = () => post<EstadoAkinator>("/akinator");
+
+export const responderAkinator = (id: string, resposta: RespostaAkinator) =>
+    post<EstadoAkinator>(`/akinator/${id}/resposta`, { resposta });
+
+export const confirmarAkinator = (id: string, acertou: boolean) =>
+    post<EstadoAkinator>(`/akinator/${id}/confirmacao`, { acertou });
+
+export const buscarArvore = (estrategia: EstrategiaAkinator = "metade") =>
+    request<ArvoreAkinator>(`/akinator/arvore?estrategia=${estrategia}`);
+
+export const buscarAnalise = () => request<LinhaAnalise[]>("/akinator/analise");
