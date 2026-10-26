@@ -47,10 +47,20 @@ def jogar_genius():
             print("Entrada inválida. Digite 's' (sim) ou 'n' (não).")
             continue
         jogo.responder(resp in ("s", "sim"))
+    if jogo.status == "palpite":
+        print("\nMeu palpite: " + " · ".join((jogo.perfil or {}).values()))
+        while True:
+            confirmacao = input("Esse é o seu perfil? (s/n): ").strip().lower()
+            if confirmacao in ("s", "sim", "n", "nao", "não"):
+                jogo.confirmar(confirmacao in ("s", "sim"))
+                break
+            print("Entrada inválida. Digite 's' ou 'n'.")
     if jogo.status == "descobriu":
         print(f"\nAcertei em {jogo.usadas} perguntas! Seu perfil é:")
         for cat, val in (jogo.perfil or {}).items():
             print(f"  - {cat.capitalize()}: {val}")
+    elif jogo.status == "sem_correspondencia":
+        print("\nNenhuma das opções disponíveis corresponde ao perfil imaginado considerando suas respostas. Confira as características e tente novamente.")
     else:
         print(f"\nAtingi o limite de {jogo.max_tentativas} perguntas. Você venceu!")
 

@@ -80,8 +80,10 @@ def test_genius_para_todos_os_54_perfis(perfil):
         assert jogo.usadas <= 7
 
     assert jogo.pergunta is None
-    if jogo.status == "descobriu":
+    if jogo.status == "palpite":
         assert jogo.perfil == perfil
+        jogo.confirmar(True)
+        assert jogo.status == "descobriu"
     else:
         assert jogo.status == "limite"
         assert jogo.usadas == 7
@@ -130,3 +132,38 @@ def test_api_genius_fluxo_completo():
     assert c.get("/genius/id-inexistente").status_code == 404
     assert c.post("/genius/id-inexistente/resposta", json={"resposta": True}).status_code == 404
 
+
+@pytest.mark.parametrize("acertou", [True, False])
+def test_genius_sete_naos_exigem_confirmacao(acertou):
+    jogo = Genius()
+    with pytest.raises(ValueError, match="aguardando"):
+        jogo.confirmar(True)
+    while jogo.status == "jogando":
+        jogo.responder(False)
+    assert jogo.usadas == 7
+    assert jogo.status == "palpite"
+    assert len(jogo.candidatos) == 1
+    assert jogo.perfil is not None
+    jogo.confirmar(acertou)
+    assert jogo.status == ("descobriu" if acertou else "sem_correspondencia")
+    assert jogo.usadas == len(jogo.historico) == 7
+    with pytest.raises(ValueError, match="aguardando"):
+        jogo.confirmar(True)
+
+
+@pytest.mark.parametrize("acertou", [True, False])
+def test_api_genius_confirmacao_do_perfil(acertou):
+    c = TestClient(app)
+    game = c.post("/genius").json()
+    url = f"/genius/{game['id']}"
+    assert c.post(f"{url}/confirmacao", json={"acertou": True}).status_code == 400
+    while game["status"] == "jogando":
+        game = c.post(f"{url}/resposta", json={"resposta": False}).json()
+    assert game["status"] == "palpite" and game["usadas"] == 7
+    assert c.post(f"{url}/confirmacao", json={}).status_code == 422
+    res = c.post(f"{url}/confirmacao", json={"acertou": acertou})
+    assert res.status_code == 200
+    assert res.json()["status"] == ("descobriu" if acertou else "sem_correspondencia")
+    assert c.get(url).json()["status"] == res.json()["status"]
+    assert c.post(f"{url}/confirmacao", json={"acertou": True}).status_code == 400
+    assert c.post("/genius/inexistente/confirmacao", json={"acertou": True}).status_code == 404

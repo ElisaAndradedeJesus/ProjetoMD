@@ -26,9 +26,11 @@ test("54 perfis: perguntas úteis e equilibradas, sem eliminar o perfil verdadei
       assert.ok(game.usadas <= 7);
     }
     assert.equal(game.pergunta, null);
-    if (game.status === "descobriu") {
+    if (game.status === "palpite") {
       descobertas++;
       assert.deepEqual(game.perfil, perfil);
+      game = await service.confirmar(game.id, true);
+      assert.equal(game.status, "descobriu");
     } else {
       limites++;
       assert.equal(game.usadas, 7);
@@ -66,12 +68,35 @@ test("API: contrato de criação e resposta e tratamento de falhas", async () =>
   const api = criarServicoApi("http://example.test/", fetchMock);
   assert.deepEqual(await api.iniciarPartida(), estado);
   await api.responder("partida", false);
+  await api.confirmar("partida", false);
   assert.deepEqual(chamadas, [
     { url: "http://example.test/genius", body: undefined },
     { url: "http://example.test/genius/partida/resposta", body: '{"resposta":false}' },
+    { url: "http://example.test/genius/partida/confirmacao", body: '{"acertou":false}' },
   ]);
   const rede = criarServicoApi("", (async () => { throw new Error("offline"); }) as typeof fetch);
   await assert.rejects(rede.iniciarPartida(), /conectar/);
   const erro = criarServicoApi("", (async () => new Response("", { status: 500 })) as typeof fetch);
   await assert.rejects(erro.iniciarPartida(), /500/);
 });
+
+for (const acertou of [true, false]) {
+  test(`sete respostas Não exigem confirmação; confirmação ${acertou}`, async () => {
+    const service = criarServicoLocal();
+    let game = await service.iniciarPartida();
+    await assert.rejects(service.confirmar(game.id, true), /aguardando/);
+    while (game.status === "jogando") game = await service.responder(game.id, false);
+    assert.equal(game.usadas, 7);
+    assert.equal(game.status, "palpite");
+    assert.equal(game.candidatos.length, 1);
+    assert.ok(game.perfil);
+    const perfil = structuredClone(game.perfil);
+    game.perfil.textura = "alterado";
+    game = await service.confirmar(game.id, acertou);
+    assert.equal(game.status, acertou ? "descobriu" : "sem_correspondencia");
+    assert.deepEqual(game.perfil, perfil);
+    assert.equal(game.usadas, 7);
+    assert.equal(game.historico.length, 7);
+    await assert.rejects(service.confirmar(game.id, true), /aguardando/);
+  });
+}

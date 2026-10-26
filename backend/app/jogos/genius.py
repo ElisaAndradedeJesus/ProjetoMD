@@ -102,7 +102,7 @@ def escolher_pergunta(
 class Genius:
     id: str = field(default_factory=lambda: str(uuid.uuid4()))
     max_tentativas: int = 7
-    status: str = "jogando"  # "jogando" | "descobriu" | "limite"
+    status: str = "jogando"  # "jogando" | "palpite" | "descobriu" | "sem_correspondencia" | "limite"
     usadas: int = 0
     candidatos: list[dict[str, str]] = field(default_factory=lambda: [dict(p) for p in PERFIS])
     pergunta: Pergunta | None = None
@@ -161,10 +161,10 @@ class Genius:
             )
 
             if len(self.candidatos) == 1:
-                self.status = "descobriu"
+                self.status = "palpite"
                 self.perfil = self.candidatos[0]
                 self.pergunta = None
-                log(f"Genius descobriu o perfil: {self.perfil} em {self.usadas} tentativa(s)!")
+                log(f"Genius deduziu o perfil (aguardando confirmação): {self.perfil} em {self.usadas} tentativa(s)!")
             elif self.usadas >= self.max_tentativas:
                 self.status = "limite"
                 self.perfil = None
@@ -178,11 +178,18 @@ class Genius:
                 if self.pergunta:
                     log(f"Próxima pergunta: {self.pergunta.texto}")
 
-        if self.status != "jogando":
+        if self.status in ("palpite", "limite"):
             self.contador.imprimir_resumo(
                 "O(log n) equivalente — partição do espaço de estados em árvore de decisão minimax",
                 len(PERFIS),
             )
+
+    def confirmar(self, acertou: bool) -> None:
+        if not isinstance(acertou, bool):
+            raise ValueError("Confirmação inválida: use Sim ou Não.")
+        if self.status != "palpite":
+            raise ValueError("Não há palpite aguardando confirmação.")
+        self.status = "descobriu" if acertou else "sem_correspondencia"
 
     def estado(self) -> dict[str, Any]:
         return {

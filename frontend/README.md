@@ -40,7 +40,7 @@ Os testes percorrem os 54 perfis do Genius, conferem isolamento/reinício de ses
 ## Jogar
 
 - Nível 1: palpites de 1 a 100 no desafio; na Máquina Vidente, pense em 0 a 100 e informe se seu número é maior, menor ou igual ao palpite.
-- Nível 2: mantenha uma característica de cada categoria; as 54 combinações podem ser identificadas em até sete respostas coerentes.
+- Nível 2: mantenha uma característica de cada categoria; as 54 combinações podem ser identificadas em até sete respostas coerentes. Ao sobrar um perfil, confira as características e escolha “Sim, acertou” ou “Não é esse perfil”; a máquina só ganha com sua confirmação. Rejeitar o único perfil restante encerra a partida sem vencedor, com um aviso de que as respostas não correspondem a um perfil disponível.
 - Nível 3: escolha um personagem da lista exibida pelo Akinator. Respostas Sim/Não permitem acompanhar o caminho na árvore; respostas incertas usam a dedução do motor.
 
 Falha de conexão: confira `/health`, a porta 8000 e `VITE_API_URL`. Se a API foi reiniciada, volte ao menu e abra outra partida.

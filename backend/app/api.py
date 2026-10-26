@@ -183,3 +183,12 @@ def responder_genius(partida_id: str, body: RespostaGeniusIn):
         raise HTTPException(400, str(e))
     return partida.estado()
 
+
+@app.post("/genius/{partida_id}/confirmacao")
+def confirmar_genius(partida_id: str, body: ConfirmacaoIn):
+    partida = _buscar(partida_id, Genius)
+    try:
+        partida.confirmar(body.acertou)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    return partida.estado()

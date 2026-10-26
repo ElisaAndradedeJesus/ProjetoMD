@@ -23,6 +23,7 @@ A CLI oferece os jogos numéricos e o Genius. O Akinator tem interface web. `BIG
 | Criar vidente | `POST /maquina-vidente` | — |
 | Responder vidente | `POST /maquina-vidente/{id}/feedback` | `{"feedback": "maior"}` (ou `menor`, `acertou`) |
 | Criar Genius | `POST /genius` | — |
+| Confirmar perfil do Genius | `POST /genius/{id}/confirmacao` | `{"acertou": true}` (ou `false`) |
 | Responder Genius | `POST /genius/{id}/resposta` | `{"resposta": true}` (ou `false`) |
 | Listar personagens | `GET /akinator/personagens` | — |
 | Criar Akinator | `POST /akinator` | — |
@@ -54,3 +55,5 @@ corepack pnpm dev
 ```
 
 Porta padrão 3001. Rotas: `GET /api/akinator/people`, `POST /api/akinator/start`, `/answer` e `/confirm`. Os corpos e respostas estão em `src/akinator/akinator.dto.ts`; eles diferem da API Python. Não substitua `VITE_API_URL` por essa porta para apresentar o projeto completo.
+
+No Genius, sobrar um candidato muda o status para `palpite`. A confirmação leva a `descobriu` ou `sem_correspondencia` (perfil rejeitado, sem vencedor); ela não consome uma das sete perguntas. Inclusive uma sequência de sete respostas Não requer confirmação: exclusão de características pode deduzir um perfil, mas a vitória depende do participante confirmar esse perfil.

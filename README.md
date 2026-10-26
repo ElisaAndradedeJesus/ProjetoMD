@@ -9,6 +9,58 @@ Trabalho de Matemática Discreta para a feira de ciência e tecnologia. Uma inte
 | 2 · Características | Genius Característico | Pense em um dos 54 perfis; responda até 7 perguntas de Sim/Não. |
 | 3 · Personagens | Akinator | Escolha um dos 24 personagens da lista e acompanhe a árvore de decisão. |
 
+## Proposta do projeto
+
+**Como uma máquina consegue descobrir algo fazendo poucas perguntas?** O ProjetoMD transforma essa pergunta em uma experiência interativa. A cada resposta, o participante observa um conjunto de possibilidades diminuir até chegar a um número, um perfil ou um personagem.
+
+O objetivo é relacionar conceitos de Matemática Discreta com algoritmos que podem ser vistos em ação. Os jogos permitem experimentar estratégias, acompanhar decisões e comparar a quantidade de passos necessária para encontrar uma resposta. A proposta é educativa: o participante fornece as pistas, e o programa aplica regras sobre uma base conhecida de possibilidades.
+
+## Os três níveis
+
+### Nível 1 — Busca em um intervalo numérico
+
+Em **Desafiar a Máquina**, o programa sorteia um número de 1 a 100. O jogador tem até sete palpites e recebe dicas de “maior” ou “menor”. É possível experimentar palpites aleatórios ou usar uma estratégia que divida o intervalo ao meio.
+
+Em **Máquina Vidente**, os papéis se invertem: o participante pensa em um número de 0 a 100, e o programa escolhe o meio do intervalo como próximo palpite. As respostas eliminam a metade que não pode conter o número. Com pistas coerentes, a busca binária encontra qualquer número desse intervalo em até sete palpites.
+
+### Nível 2 — Combinações de características
+
+No **Genius Característico**, o participante pensa em um perfil com uma opção de cada categoria: textura do cabelo, comprimento do cabelo, cor dos olhos e uso de óculos. O produto cartesiano dessas opções gera **3 × 3 × 3 × 2 = 54 perfis**.
+
+A máquina faz perguntas de Sim/Não e mostra os candidatos restantes e o histórico. A abertura pode variar; nas perguntas seguintes, o critério minimax procura reduzir o tamanho do maior grupo que poderia restar. Ao sobrar um perfil, o jogo pede a confirmação: a máquina só vence se o participante confirmar que acertou. Se o participante negar o único perfil restante, o jogo informa que nenhuma das opções disponíveis corresponde ao perfil imaginado considerando suas respostas, sem declarar vencedor. Essa confirmação não consome uma das sete perguntas. As perguntas permitidas identificam qualquer perfil em até sete respostas coerentes: no máximo duas para cada categoria com três opções e uma para a categoria com duas opções.
+
+### Nível 3 — Dedução e árvore de decisão
+
+O **Akinator** trabalha com uma lista de **24 personagens cadastrados**, cada um descrito por traços. O participante escolhe alguém da lista e responde às perguntas para que o programa encontre um candidato e peça a confirmação do palpite.
+
+Além de Sim e Não, o motor aceita respostas incertas, como “Não sei” e “Provavelmente”. A interface apresenta a árvore de decisão e permite comparar estratégias de escolha de perguntas. Com respostas firmes e coerentes, é possível acompanhar o caminho percorrido na árvore; com incerteza, a dedução deixa de seguir um único caminho binário.
+
+## Onde entra a Matemática Discreta?
+
+| Conceito | Aplicação no projeto |
+| --- | --- |
+| Conjuntos e predicados | Cada característica define quais candidatos permanecem após uma resposta. |
+| Produto cartesiano e combinatória | As opções das quatro categorias formam os 54 perfis do Genius. |
+| Busca binária e logaritmos | Dividir o intervalo numérico ao meio reduz o número de palpites para O(log n). |
+| Árvores binárias de decisão | Cada pergunta cria ramificações Sim/Não até chegar a uma folha com um candidato. |
+| Estratégias de busca | Perguntas equilibradas são comparadas com ordem fixa, escolha aleatória e busca linear. |
+| Complexidade de algoritmos | Contadores e análises ajudam a discutir operações, quantidade de perguntas e uso de memória. |
+
+Uma árvore binária com altura h comporta no máximo 2^h folhas. Por isso, distinguir 24 personagens exige altura de pelo menos ⌈log₂ 24⌉ = 5. Na base atual, a estratégia equilibrada atinge esse limite com respostas Sim/Não coerentes.
+
+**Quantidade de perguntas e tempo de processamento são medidas diferentes.** Escolher uma boa pergunta também exige avaliar candidatos e características. A [documentação do backend](backend/README.md#matemática-e-custo-computacional) detalha essa distinção e os custos dos algoritmos.
+
+## Tecnologias e funcionamento
+
+| Camada | Tecnologias | Responsabilidade |
+| --- | --- | --- |
+| Interface web | React 19, TypeScript, Vite e Tailwind CSS | Exibir os jogos, receber respostas e visualizar o espaço de busca. |
+| API principal | Python, FastAPI e Pydantic | Manter as partidas, validar entradas e executar a lógica dos quatro modos. |
+| Verificação | pytest, testes Node/TypeScript e GitHub Actions | Conferir regras dos jogos, contratos HTTP, tipos e build. |
+| Implementação alternativa | Express e TypeScript | Preservar outro motor de Akinator para estudo, separado da API usada pela interface. |
+
+O navegador envia ações à API principal, que devolve o estado atualizado da partida. O Genius também oferece um modo local executado no próprio navegador. As sessões da API ficam em memória, sem banco de dados ou login.
+
 ## Começar
 
 Requisitos: Python 3.10 ou superior, Node.js 24 e pnpm 12.14.0. A demonstração completa usa **somente a API Python e o frontend**, na mesma cópia deste repositório.
@@ -65,39 +117,6 @@ O build verifica TypeScript e gera `frontend/dist`. Depois use `corepack pnpm pr
 
 As partidas ficam em memória. Reiniciar a API apaga as sessões; abra uma nova partida no menu. Instale as dependências antes da apresentação: com os pacotes instalados, os jogos não precisam de serviços externos.
 
-## Como usar as tarefas (Issues)
+## Participação do grupo
 
-Uma **issue** é uma ficha de tarefa: nela ficam o que precisa ser feito,
-quem está cuidando e os comentários sobre a entrega. O **Project** é o quadro
-que reúne essas tarefas e mostra o andamento.
-
-### Para criar uma tarefa
-
-1. Abra a aba [Issues](https://github.com/ElisaAndradedeJesus/ProjetoMD/issues)
-   e confira se a tarefa já existe.
-2. Clique em **New issue**. Use um título específico, como
-   `[Grupo 1] Criar histórico de palpites`.
-3. Explique o objetivo, o que precisa funcionar para a tarefa estar pronta
-   e se ela depende de outra tarefa. Inclua referências, como o link do Figma.
-4. Clique em **Create** para salvar. A issue receberá um número, como `#12`.
-5. No campo **Projects** da issue, selecione o quadro da turma.
-   Se não conseguir, peça ajuda a quem organiza o quadro.
-
-### Para pegar uma tarefa e acompanhar o andamento
-
-1. Escolha uma issue disponível e comente que quer trabalhar nela.
-   Combine com o responsável se já houver alguém trabalhando.
-2. Em **Assignees**, registre quem vai cuidar da tarefa. Se não tiver acesso
-   para alterar esse campo, peça ajuda a um colaborador.
-3. No quadro, atualize a situação conforme o trabalho avançar. Use os
-   comentários da issue para registrar dúvidas, decisões e impedimentos.
-4. Para enviar mudanças nos arquivos, siga o [guia de contribuição](CONTRIBUTING.md).
-   No campo **Issue** da descrição do pull request, escreva `#12`, trocando
-   pelo número da tarefa.
-5. Se o pull request concluir toda a tarefa, use `Closes #12`. Por padrão,
-   isso encerra a issue quando o PR entra na branch padrão do repositório.
-   Se entregar só uma parte, mantenha apenas `#12` e deixe a issue aberta.
-
-Para entregas sem pull request, como uma apresentação em link externo,
-registre o resultado na issue. Depois que alguém conferir a entrega, use
-**Close issue** e atualize a situação no quadro, se necessário.
+Para enviar alterações, siga o [guia de contribuição](CONTRIBUTING.md). As tarefas e o acompanhamento das entregas estão descritos no [guia de issues e organização](docs/tarefas.md).

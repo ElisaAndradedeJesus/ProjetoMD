@@ -15,7 +15,7 @@
 
 **Nível 1 — números:** abra Desafiar a Máquina, comece pelo 50 e ajuste o intervalo conforme as dicas. Depois abra Máquina Vidente, pense em 73: para palpites 50, 75, 62, 68, 71, 73, responda Maior, Menor, Maior, Maior, Maior, Acertou. Mostre a redução do intervalo. A Máquina Vidente aceita de 0 a 100; o desafio, de 1 a 100.
 
-**Nível 2 — Genius:** pense em cabelo cacheado, curto, olhos castanhos e com óculos. As perguntas variam: responda conforme esse perfil até a descoberta. Explique 3 × 3 × 3 × 2 = 54 e o limite de sete perguntas. Mostre candidatos restantes e histórico. O modo local permite demonstrar esse nível se a API estiver indisponível.
+**Nível 2 — Genius:** pense em cabelo cacheado, curto, olhos castanhos e com óculos. As perguntas variam: responda conforme esse perfil até surgir o palpite. Confira as quatro características e confirme se a máquina acertou. Explique 3 × 3 × 3 × 2 = 54 e o limite de sete perguntas. Mostre candidatos restantes e histórico. O modo local permite demonstrar esse nível se a API estiver indisponível.
 
 **Nível 3 — Akinator:** abra a lista, escolha um dos 24 personagens e leia seus traços. Responda Sim/Não de forma coerente; confirme o palpite e mostre o caminho na árvore. Compare as estratégias na visualização. “Não sei” e “Provavelmente” demonstram incerteza, mas deixam de seguir um caminho binário exato.
 
@@ -33,7 +33,7 @@
 
 - [ ] Desafio: entrada fora do intervalo, dicas e término.
 - [ ] Vidente: 0, 73 e 100; acerto e dicas contraditórias.
-- [ ] Genius: descoberta, reinício e troca de modo nos dois sentidos.
+- [ ] Genius: palpite, confirmação e recusa (incluindo sete respostas Não), reinício e troca de modo nos dois sentidos.
 - [ ] Akinator: lista, perguntas, confirmação e árvore.
 - [ ] Menu, foco de teclado, projeção e versão de produção.
 

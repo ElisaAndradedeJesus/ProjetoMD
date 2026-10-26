@@ -134,14 +134,14 @@ function ResultadoGenius({ game, pending, onRestart, onClose }: {
         {acertou ? <Trophy size={34} aria-hidden="true" /> : <X size={36} aria-hidden="true" />}
       </span>
       <h2 id="genius-resultado-titulo" className="mt-6 text-2xl font-extrabold leading-tight">
-        {acertou ? "A máquina acertou!" : "Limite de tentativas"}
+        {acertou ? "A máquina acertou!" : game.status === "sem_correspondencia" ? "Nenhum perfil corresponde" : "Limite de tentativas"}
       </h2>
       <p id="genius-resultado-descricao" className="mt-3 text-sm leading-relaxed text-slate-500">
         {acertou
           ? `Ela descobriu suas características na tentativa ${String(game.usadas).padStart(2, "0")} de 07.`
-          : "A máquina usou as 7 tentativas e não descobriu. Você venceu!"}
+          : game.status === "sem_correspondencia" ? "Nenhuma das opções disponíveis corresponde ao perfil imaginado considerando suas respostas. Confira as características e mantenha o mesmo perfil ao tentar novamente." : "A máquina usou as 7 tentativas e não descobriu. Você venceu!"}
       </p>
-      {game.perfil && <ul aria-label="Perfil descoberto" className="mt-5 flex flex-wrap justify-center gap-1.5">
+      {game.perfil && <ul aria-label="Perfil deduzido" className="mt-5 flex flex-wrap justify-center gap-1.5">
         {grupos.map(grupo => <li key={grupo.id} className={`rounded-full px-2.5 py-1 text-xs font-bold text-white ${grupo.id === "textura" ? "bg-blue-600" : grupo.id === "comprimento" ? "bg-orange-600" : grupo.id === "olhos" ? "bg-green-700" : "bg-slate-600"}`}>
           {game.perfil![grupo.id as Categoria]}
         </li>)}
@@ -188,8 +188,10 @@ export default function GeniusGame({ back }: Props) {
   const usadas = game?.usadas ?? 0;
   const candidatos = game?.candidatos.length ?? 54;
   const reducao = Math.round((1 - candidatos / 54) * 100);
-  const terminou = !!game && game.status !== "jogando";
+  const terminou = !!game && ["descobriu", "sem_correspondencia", "limite"].includes(game.status);
   const titulo = pending ? "Processando…" : !game ? "A máquina vai adivinhar suas características em até 7 tentativas."
+    : game.status === "palpite" ? "Esse é o perfil em que você pensou?"
+    : game.status === "sem_correspondencia" ? "Nenhuma das opções disponíveis corresponde ao perfil imaginado."
     : game.status === "descobriu" ? "A máquina descobriu seu perfil!"
     : game.status === "limite" ? "Você venceu! A máquina atingiu o limite de perguntas."
     : game.pergunta!.texto;
@@ -235,7 +237,7 @@ export default function GeniusGame({ back }: Props) {
             {titulo}
           </h2>
           <p className="mt-3 text-sm leading-relaxed text-slate-600">
-            {!game ? "Pense em um traço de cada categoria e mantenha o mesmo perfil durante a partida. Não precisa selecionar as opções."
+            {!game ? "Ao final, confirme se o perfil deduzido está correto. Pense em um traço de cada categoria e mantenha o mesmo perfil durante a partida. Não precisa selecionar as opções."
               : game.perfil ? Object.values(game.perfil).join(" · ")
               : terminou ? `Ainda restam ${candidatos} perfis possíveis após sete respostas.`
               : "Responda Sim ou Não sobre o perfil em que você pensou."}
@@ -272,7 +274,7 @@ export default function GeniusGame({ back }: Props) {
                     >
                       <RostoOpcao grupo={grupo.id} indice={indice} />
                       <span className="font-extrabold">{opcao}</span>
-                      {selecionada && <span className="inline-flex items-center gap-1 text-[10px] font-medium"><Check size={12} aria-hidden="true" /> Confirmado</span>}
+                      {selecionada && <span className="inline-flex items-center gap-1 text-[10px] font-medium"><Check size={12} aria-hidden="true" /> Deduzido</span>}
                       {perguntando && <span className="text-[10px] font-semibold">Em avaliação</span>}
                       {eliminada && <span className="text-[10px]">Eliminado</span>}
                     </div>
@@ -288,6 +290,18 @@ export default function GeniusGame({ back }: Props) {
               <button type="button" disabled={pending} onClick={() => void retry.current()} className="mt-3 min-h-11 rounded-lg border px-3 font-bold focus-visible:outline-2">Tentar novamente</button>
               {modo === "api" && <button type="button" disabled={pending} onClick={() => iniciar("local")} className="mt-2 min-h-11 rounded-lg border px-3 font-bold focus-visible:outline-2">Iniciar nova partida local</button>}
             </div>}
+            {game?.status === "palpite" && <section aria-label="Confirmar perfil" className="rounded-xl border border-blue-200 bg-blue-50 p-4">
+              <p className="font-bold">Esse é o seu perfil?</p>
+              <p className="mt-2 text-sm">{game.perfil && Object.values(game.perfil).join(" · ")}</p>
+              <p className="mt-2 text-sm">Confira as quatro características. Se nenhuma opção corresponde ao que você imaginou, confira suas respostas ou escolha um perfil formado pelas opções disponíveis.</p>
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                {[true, false].map(acertou => <button key={String(acertou)} type="button" disabled={pending}
+                  onClick={() => void executar(() => (modo === "local" ? local.current : api.current).confirmar(game.id, acertou))}
+                  className={`min-h-12 rounded-xl px-3 py-3 font-bold text-white disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-600 ${acertou ? "bg-green-700" : "bg-orange-700"}`}>
+                  {acertou ? "Sim, acertou" : "Não é esse perfil"}
+                </button>)}
+              </div>
+            </section>}
             {game?.status === "jogando" && <div className="grid grid-cols-2 gap-3">
               {[true, false].map(resposta => <button key={String(resposta)} type="button" disabled={pending || !!error}
                 onClick={() => void executar(() => (modo === "local" ? local.current : api.current).responder(game.id, resposta))}

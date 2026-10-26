@@ -9,7 +9,7 @@ export type Perfil = Record<Categoria, string>;
 export type Pergunta = { categoria: Categoria; opcao: string; texto: string };
 export type Estado = {
   id: string;
-  status: "jogando" | "descobriu" | "limite";
+  status: "jogando" | "palpite" | "descobriu" | "sem_correspondencia" | "limite";
   usadas: number;
   candidatos: Perfil[];
   pergunta: Pergunta | null;
@@ -19,6 +19,7 @@ export type Estado = {
 export interface ServicoGenius {
   iniciarPartida(): Promise<Estado>;
   responder(id: string, resposta: boolean): Promise<Estado>;
+  confirmar(id: string, acertou: boolean): Promise<Estado>;
 }
 export const perfis: Perfil[] = categorias.textura.flatMap(textura =>
   categorias.comprimento.flatMap(comprimento => categorias.olhos.flatMap(olhos =>
@@ -74,11 +75,20 @@ export function criarServicoLocal(): ServicoGenius {
       const pergunta = anterior.pergunta;
       const candidatos = anterior.candidatos.filter(p => (p[pergunta.categoria] === pergunta.opcao) === resposta);
       const usadas = anterior.usadas + 1;
-      const status = candidatos.length === 1 ? "descobriu" : usadas >= 7 ? "limite" : "jogando";
+      const status = candidatos.length === 1 ? "palpite" : usadas >= 7 ? "limite" : "jogando";
       const estado: Estado = { id, status, usadas, candidatos,
         pergunta: status === "jogando" ? escolherPergunta(candidatos) : null,
         historico: [...anterior.historico, { pergunta, resposta }],
-        perfil: status === "descobriu" ? candidatos[0] : null };
+        perfil: status === "palpite" ? candidatos[0] : null };
+      partidas.set(id, estado);
+      return structuredClone(estado);
+    },
+    async confirmar(id, acertou) {
+      if (typeof acertou !== "boolean") throw new Error("Confirmação inválida: use Sim ou Não.");
+      const anterior = partidas.get(id);
+      if (!anterior) throw new Error("Partida não encontrada. Inicie uma nova partida.");
+      if (anterior.status !== "palpite") throw new Error("Não há palpite aguardando confirmação.");
+      const estado: Estado = { ...anterior, status: acertou ? "descobriu" : "sem_correspondencia" };
       partidas.set(id, estado);
       return structuredClone(estado);
     },
@@ -101,5 +111,6 @@ export function criarServicoApi(base: string, solicitar: typeof fetch = fetch): 
   return {
     iniciarPartida: () => post("/genius"),
     responder: (id, resposta) => post(`/genius/${encodeURIComponent(id)}/resposta`, { resposta }),
+    confirmar: (id, acertou) => post(`/genius/${encodeURIComponent(id)}/confirmacao`, { acertou }),
   };
 }
