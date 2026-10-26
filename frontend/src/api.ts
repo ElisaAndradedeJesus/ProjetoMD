@@ -64,6 +64,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     try {
         res = await fetch(`${apiUrl}${path}`, {
         ...init,
+        signal: AbortSignal.timeout(10000),
         headers: { "Content-Type": "application/json" },
         });
     } catch {

@@ -1,28 +1,69 @@
-# ProjetoMD
+# ProjetoMD — Jogos de Adivinhação
 
-Projeto de Matemática Discreta focado no estudo de algoritmos de busca (Busca Binária e Árvores de Decisão) e análise de complexidade assintótica (Big-O).
+Trabalho de Matemática Discreta para a feira de ciência e tecnologia. Uma interface reúne três níveis para explorar busca binária, conjuntos, combinatória e árvores de decisão.
 
-O projeto conta com 3 modalidades:
-1. **Desafiar a Máquina** (o usuário tenta adivinhar o número da máquina)
-2. **Máquina Vidente** (a máquina adivinha o número do usuário via busca binária)
-3. **Genius Característico** (a máquina adivinha o perfil de características em até 7 perguntas via árvore de decisão minimax)
+| Nível | Jogo | Como funciona |
+| --- | --- | --- |
+| 1 · Números | Desafiar a Máquina | Adivinhe um número de 1 a 100 em até 7 palpites. |
+| 1 · Números | Máquina Vidente | Pense em um número de 0 a 100; a máquina usa busca binária, com até 7 palpites. |
+| 2 · Características | Genius Característico | Pense em um dos 54 perfis; responda até 7 perguntas de Sim/Não. |
+| 3 · Personagens | Akinator | Escolha um dos 24 personagens da lista e acompanhe a árvore de decisão. |
 
----
+## Começar
 
-## 🚀 Como Rodar o Projeto?
+Requisitos: Python 3.10 ou superior, Node.js 24 e pnpm 12.14.0. A demonstração completa usa **somente a API Python e o frontend**, na mesma cópia deste repositório.
 
-Consulte o nosso guia passo a passo completo:
-👉 **[Guia de Execução (Backend + Frontend)](guia_como_rodar.md)**
+Terminal 1, na raiz:
 
----
+```bash
+cd backend
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+python -m uvicorn app.api:app --host 127.0.0.1 --port 8000
+```
 
-## Quero ajudar. Por onde começo?
+No Windows: use `python` no lugar de `python3` e `.venv\Scripts\activate` para ativar o ambiente.
 
-Leia o [passo a passo para participar](CONTRIBUTING.md).
-Ele explica como enviar suas mudanças para outra pessoa conferir antes de
-elas entrarem na versão principal do projeto.
+Terminal 2, na raiz:
 
-**A regra principal é: ninguém muda a versão principal sozinho.**
+```bash
+cd frontend
+corepack pnpm install --frozen-lockfile
+corepack pnpm dev --host 127.0.0.1
+```
+
+Abra http://localhost:5173. Saúde da API: http://localhost:8000/health. Documentação interativa: http://localhost:8000/docs.
+Se `corepack` não estiver instalado, instale o pnpm e use `pnpm` nos comandos.
+
+## Documentação
+
+- [Preparação e roteiro de apresentação](docs/apresentacao.md)
+- [Backend, endpoints e complexidade](backend/README.md)
+- [Frontend e configuração](frontend/README.md)
+- [Resultados da validação](docs/validacao.md)
+- [Mapa da integração das branches](docs/integracao.md)
+- [Como contribuir](CONTRIBUTING.md)
+- [Proteção da main](docs/protecao-github.md)
+
+## Verificar a entrega
+
+```bash
+cd backend
+python -m pytest -q
+cd ../frontend
+corepack pnpm test
+corepack pnpm build
+```
+
+O build verifica TypeScript e gera `frontend/dist`. Depois use `corepack pnpm preview --host 127.0.0.1` para conferir a versão de produção. Mantenha a API ligada.
+
+## Organização
+
+`frontend/src` contém a interface React/TypeScript; `backend/app` contém todos os jogos e a API FastAPI; `backend/tests` contém os testes Python.
+`backend/src` preserva uma implementação alternativa do Akinator em Express/TypeScript, com contrato próprio em `/api/akinator`. Ela não é usada pela interface integrada. Veja o [mapa da integração](docs/integracao.md).
+
+As partidas ficam em memória. Reiniciar a API apaga as sessões; abra uma nova partida no menu. Instale as dependências antes da apresentação: com os pacotes instalados, os jogos não precisam de serviços externos.
 
 ## Como usar as tarefas (Issues)
 
@@ -60,17 +101,3 @@ que reúne essas tarefas e mostra o andamento.
 Para entregas sem pull request, como uma apresentação em link externo,
 registre o resultado na issue. Depois que alguém conferir a entrega, use
 **Close issue** e atualize a situação no quadro, se necessário.
-
-## Visão geral do andamento do projeto
-
-| Grupo | Proposta | Situação | Links |
-|---|---|---|---|
-| 1 | Jogo de adivinhação | Layout elaborado; desenvolvimento a organizar | [Informações do Grupo 1](docs/grupo-1.md) |
-| 2 | A definir | Em organização | [Informações do Grupo 2](docs/grupo-2.md) |
-| 3 | A definir | Em organização | [Informações do Grupo 3](docs/grupo-3.md) |
-
-
----
-
-Passo a passo seguido para ativar a proteção do servidor que impede de mudar a versão principal sozinho:
-[passo a passo para ativar a proteção](docs/protecao-github.md).

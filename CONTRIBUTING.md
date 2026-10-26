@@ -130,8 +130,9 @@ O GitHub vai conferir automaticamente o título do pedido. Essa verificação
 se chama `pr-policy`. Se ela falhar, confira o título e edite pelo botão
 **Edit**, ao lado dele. O GitHub fará a verificação de novo.
 
-**Essa verificação ainda não testa se o programa funciona.** Quem fez a mudança
-precisa testá-la, e quem revisa precisa conferir o trabalho.
+A verificação `pr-policy` confere o título. O workflow `Validar projeto` também
+executa testes Python, testes TypeScript e o build do frontend. Quem revisa
+precisa conferir os fluxos na interface.
 
 Se pedirem ajustes, edite os arquivos na mesma branch e repita os comandos
 `git add`, `git commit` e `git push`. As mudanças aparecem no mesmo pedido;

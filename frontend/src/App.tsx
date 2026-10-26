@@ -162,7 +162,7 @@ function Menu({ go }: { go: (s: Screen) => void }) {
       </h1>
       
       <p className="rise mt-5 max-w-md text-center text-base text-slate-500 sm:text-lg" style={{ animationDelay: "80ms" }}>
-        Encontre um número entre 1 e 100 em no máximo 7 tentativas. Escolha quem adivinha.
+        Explore três níveis: números, características e personagens. Escolha seu desafio.
       </p>
 
       <div className="mt-8 grid w-full max-w-3xl grid-cols-1 gap-4 sm:mt-12 sm:gap-6 sm:grid-cols-2 sm:gap-8">
@@ -170,7 +170,7 @@ function Menu({ go }: { go: (s: Screen) => void }) {
           {
             // ICONE: desafiar maquina
             id: "player" as const,
-            title: "Desafiar a Máquina",
+            title: "Nível 1 · Desafiar a Máquina",
             sub: "Você adivinha o número secreto da máquina.",
             color: BLUE,
             tint: "bg-blue-50",
@@ -179,14 +179,14 @@ function Menu({ go }: { go: (s: Screen) => void }) {
           {
             // ICONE: Maquina vidente
             id: "machine" as const,
-            title: "Máquina Vidente",
+            title: "Nível 1 · Máquina Vidente",
             sub: "Pense num número e a máquina vai descobrir.",
             color: ORANGE,
             tint: "bg-orange-50",
             Icon: Wand2,
           },{
             id: "akinator" as const,
-            title: "Akinator",
+            title: "Nível 3 · Akinator",
             sub: "A máquina adivinha o perfil em que você pensou.",
             color: "#2563eb",
             tint: "bg-blue-100",
@@ -195,7 +195,7 @@ function Menu({ go }: { go: (s: Screen) => void }) {
           {
             // ICONE: Genius
             id: "genius" as const,
-            title: "Genius Característico",
+            title: "Nível 2 · Genius Característico",
             sub: "A máquina vai adivinhar suas características em até 7 tentativas.",
             color: GREEN,
             tint: "bg-green-50",
@@ -905,7 +905,7 @@ function MachineGame({ back }: { back: () => void }) {
                   color={color}
                   edge={edge}
                   depth={main ? 7 : 6}
-                  disabled={done}
+                  disabled={over || sending}
                   onClick={() => answer(k)}
                   className={`flex flex-col items-center justify-center gap-1 rounded-2xl px-2 sm:gap-1.5 sm:rounded-3xl text-white hover:brightness-105 ${
                     main ? "order-first col-span-2 min-h-16 sm:order-none sm:col-span-1 sm:min-h-32" : "min-h-16 sm:min-h-28"

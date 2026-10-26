@@ -179,10 +179,10 @@ export default function GeniusGame({ back }: Props) {
     catch (e) { setError(e instanceof Error ? e.message : "Erro inesperado."); }
     finally { ocupado.current = false; setPending(false); }
   }
-  function iniciar(localForcado = false) {
+  function iniciar(modoEscolhido: string = modo) {
     if (ocupado.current) return;
-    if (localForcado) setModo("local");
-    const servico = localForcado || modo === "local" ? local.current : api.current;
+    setModo(modoEscolhido);
+    const servico = modoEscolhido === "local" ? local.current : api.current;
     void executar(() => servico.iniciarPartida());
   }
   const usadas = game?.usadas ?? 0;
@@ -210,10 +210,10 @@ export default function GeniusGame({ back }: Props) {
             <h1 className="text-sm font-bold leading-snug tracking-tight sm:text-lg">Módulo Adivinhação: Perfil</h1>
             <button
               type="button"
+              disabled={pending}
               onClick={() => {
                 const novo = modo === "api" ? "local" : "api";
-                setModo(novo);
-                iniciar(novo === "local");
+                iniciar(novo);
               }}
               title="Clique para alternar entre Modo API e Modo Local"
               className="mt-1 inline-flex items-center gap-1.5 rounded-md px-1.5 py-0.5 text-xs font-medium text-slate-600 hover:bg-slate-100 transition-colors"
@@ -286,7 +286,7 @@ export default function GeniusGame({ back }: Props) {
             {error && <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
               <p>{error}</p>
               <button type="button" disabled={pending} onClick={() => void retry.current()} className="mt-3 min-h-11 rounded-lg border px-3 font-bold focus-visible:outline-2">Tentar novamente</button>
-              {modo === "api" && <button type="button" disabled={pending} onClick={() => iniciar(true)} className="mt-2 min-h-11 rounded-lg border px-3 font-bold focus-visible:outline-2">Iniciar nova partida local</button>}
+              {modo === "api" && <button type="button" disabled={pending} onClick={() => iniciar("local")} className="mt-2 min-h-11 rounded-lg border px-3 font-bold focus-visible:outline-2">Iniciar nova partida local</button>}
             </div>}
             {game?.status === "jogando" && <div className="grid grid-cols-2 gap-3">
               {[true, false].map(resposta => <button key={String(resposta)} type="button" disabled={pending || !!error}

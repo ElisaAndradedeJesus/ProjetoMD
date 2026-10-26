@@ -1,5 +1,5 @@
 """
-API HTTP dos dois jogos (FastAPI).
+API HTTP dos três níveis de jogos (FastAPI).
 Rodar:  uvicorn app.api:app --reload
 Docs:   http://localhost:8000/docs
 
