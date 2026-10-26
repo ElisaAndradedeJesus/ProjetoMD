@@ -2,7 +2,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.api import app
-from app.jogos import DesafiarMaquina, MaquinaVidente
+from app.jogos import DesafiarMaquina, Genius, MaquinaVidente
+from app.jogos.genius import PERFIS
 
 
 def test_desafio_acerta_com_busca_binaria_para_qualquer_segredo():
@@ -65,3 +66,67 @@ def test_api_fluxo_completo():
     assert v["palpite_atual"] == 50
     v = c.post(f"/maquina-vidente/{v['id']}/feedback", json={"feedback": "maior"}).json()
     assert v["intervalo_ativo"] == [51, 100] and v["palpite_atual"] == 75
+
+
+@pytest.mark.parametrize("perfil", PERFIS)
+def test_genius_para_todos_os_54_perfis(perfil):
+    jogo = Genius()
+    while jogo.status == "jogando":
+        pergunta = jogo.pergunta
+        assert pergunta is not None
+        resposta = (perfil[pergunta.categoria] == pergunta.opcao)
+        jogo.responder(resposta)
+        assert any(p == perfil for p in jogo.candidatos)
+        assert jogo.usadas <= 7
+
+    assert jogo.pergunta is None
+    if jogo.status == "descobriu":
+        assert jogo.perfil == perfil
+    else:
+        assert jogo.status == "limite"
+        assert jogo.usadas == 7
+        assert len(jogo.candidatos) > 1
+        assert jogo.perfil is None
+
+
+def test_genius_erros_e_validacoes():
+    jogo = Genius()
+    with pytest.raises(ValueError, match="Resposta inválida"):
+        jogo.responder("sim")  # type: ignore
+
+    # Finaliza a partida
+    while jogo.status == "jogando":
+        jogo.responder(True)
+
+    with pytest.raises(ValueError, match="já terminou"):
+        jogo.responder(True)
+
+
+def test_api_genius_fluxo_completo():
+    c = TestClient(app)
+    # Criar partida
+    res = c.post("/genius")
+    assert res.status_code == 201
+    dados = res.json()
+    assert dados["status"] == "jogando"
+    assert dados["usadas"] == 0
+    assert len(dados["candidatos"]) == 54
+    assert dados["pergunta"] is not None
+    partida_id = dados["id"]
+
+    # Obter estado
+    get_res = c.get(f"/genius/{partida_id}")
+    assert get_res.status_code == 200
+    assert get_res.json()["id"] == partida_id
+
+    # Responder
+    resp_res = c.post(f"/genius/{partida_id}/resposta", json={"resposta": True})
+    assert resp_res.status_code == 200
+    dados_resp = resp_res.json()
+    assert dados_resp["usadas"] == 1
+    assert len(dados_resp["historico"]) == 1
+
+    # Partida inexistente
+    assert c.get("/genius/id-inexistente").status_code == 404
+    assert c.post("/genius/id-inexistente/resposta", json={"resposta": True}).status_code == 404
+

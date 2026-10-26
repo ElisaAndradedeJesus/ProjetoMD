@@ -141,3 +141,47 @@ pnpm install
 pnpm dev
 ```
 
+
+## Genius: jogo local e futura API
+
+O Genius funciona sem backend. Inicie a interface com `corepack pnpm dev`.
+Pense em um perfil entre as 54 combinações e responda Sim/Não, mantendo o
+mesmo perfil. Cada resposta conta como uma tentativa. A máquina pergunta sobre
+uma característica por vez, escolhendo a divisão mais equilibrada dos candidatos.
+Empates seguem a ordem das categorias e opções. Descobrir na sexta resposta
+conta como vitória da máquina; se ainda restarem vários perfis, o jogador vence.
+A partida fica em memória: atualizar a página descarta o progresso.
+
+Por padrão, `VITE_GENIUS_MODE=local`. Para experimentar uma implementação futura
+do backend, configure no ambiente do Vite e reinicie o servidor:
+
+```dotenv
+VITE_GENIUS_MODE=api
+VITE_API_URL=http://localhost:8000
+```
+
+O backend atual ainda não implementa as rotas abaixo. O adaptador está preparado
+para este contrato proposto; a integração real deve ser validada quando existir API.
+
+- `POST /genius`, sem corpo: inicia uma partida.
+- `POST /genius/{id}/resposta`, corpo JSON `{ "resposta": true }` ou `false`.
+- Ambas retornam JSON com o tipo `Estado` de `src/genius/service.ts`:
+  `id`, `status` (`jogando`, `descobriu`, `limite`), `usadas`, `candidatos`
+  (lista dos perfis restantes), `pergunta`, `historico` e `perfil`.
+- Cada perfil contém `textura`, `comprimento`, `olhos`, `oculos`, com os valores
+  de `categorias` no mesmo módulo. Uma pergunta contém `categoria`, `opcao`, `texto`.
+- Histórico contém `{ pergunta, resposta }`. Durante o jogo `perfil` é `null`;
+  ao terminar `pergunta` é `null`, e `perfil` só é preenchido ao descobrir.
+- Descoberta deve ser avaliada antes do limite de seis respostas.
+
+Requisições têm limite de dez segundos. Em caso de erro é possível tentar
+novamente ou iniciar uma nova partida local, sem transferir o progresso da API.
+Para permitir tentativas de reenvio após falha de rede, o futuro backend deve
+considerar idempotência das respostas (o contrato deverá ser ampliado para isso).
+
+Testes do algoritmo (todas as 54 combinações) e do adaptador HTTP, com Node 24:
+
+```bash
+node --experimental-strip-types --test tests/genius.test.ts
+corepack pnpm build
+```

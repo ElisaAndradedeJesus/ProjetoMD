@@ -1,8 +1,20 @@
 # ProjetoMD
 
-Projeto em grupo para apresentar na feira de ciência e tecnologia.
-A ideia inicial é criar um jogo Genius e estudar quanto tempo e memória
-os algoritmos usam. Ainda vamos escolher as tecnologias e o que será feito.
+Projeto de Matemática Discreta focado no estudo de algoritmos de busca (Busca Binária e Árvores de Decisão) e análise de complexidade assintótica (Big-O).
+
+O projeto conta com 3 modalidades:
+1. **Desafiar a Máquina** (o usuário tenta adivinhar o número da máquina)
+2. **Máquina Vidente** (a máquina adivinha o número do usuário via busca binária)
+3. **Genius Característico** (a máquina adivinha o perfil de características em até 7 perguntas via árvore de decisão minimax)
+
+---
+
+## 🚀 Como Rodar o Projeto?
+
+Consulte o nosso guia passo a passo completo:
+👉 **[Guia de Execução (Backend + Frontend)](guia_como_rodar.md)**
+
+---
 
 ## Quero ajudar. Por onde começo?
 

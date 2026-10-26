@@ -1,14 +1,16 @@
-# Busca Binária — Jogos de Adivinhação
+# Busca Binária e Árvores de Decisão — Jogos de Adivinhação
 
-Monorepo do trabalho de Matemática Discreta. Dois modos de jogo para estudar complexidade (Big O):
+Monorepo do trabalho de Matemática Discreta. Três modos de jogo para estudar complexidade (Big O) e partição do espaço amostral:
 
-| Modo | Quem adivinha | Intervalo | Tentativas | Complexidade |
+| Modo | Quem adivinha | Espaço de Busca | Tentativas | Complexidade |
 |---|---|---|---|---|
-| **Desafiar a Máquina** | o usuário | 1–100 | 7 | O(1) por palpite, O(k) por partida |
-| **Máquina Vidente** | a máquina (busca binária) | 0–100 | 7 | O(log n) por partida |
+| **Desafiar a Máquina** | o usuário | 1–100 (números) | 7 | O(1) por palpite, O(k) por partida |
+| **Máquina Vidente** | a máquina (busca binária) | 0–100 (números) | 7 | O(log n) por partida |
+| **Genius Característico** | a máquina (árvore minimax) | 54 perfis combinatórios | 7 | O(log n) equivalente |
 
-Por que 7 tentativas? A busca binária corta o intervalo pela metade a cada palpite.
-Para 101 números: 101 → 50 → 25 → 12 → 6 → 3 → 1. Isso dá ⌈log2(101+1)⌉ = **7** passos no pior caso.
+Por que 7 tentativas?
+- Na **Máquina Vidente**, a busca binária corta o intervalo pela metade a cada palpite. Para 101 números: 101 → 50 → 25 → 12 → 6 → 3 → 1. Isso dá ⌈log2(101+1)⌉ = **7** passos no pior caso.
+- No **Genius Característico**, o espaço amostral tem $3 \times 3 \times 3 \times 2 = 54$ perfis. Com divisões ternárias e binárias, 7 perguntas garantem matematicamente 100% de taxa de descoberta para qualquer perfil.
 
 ```
 .
@@ -17,12 +19,13 @@ Para 101 números: 101 → 50 → 25 → 12 → 6 → 3 → 1. Isso dá ⌈log2(
 │   │   ├── complexidade.py      contador de operações + prints [BIG-O]
 │   │   ├── jogos/
 │   │   │   ├── desafiar_maquina.py
-│   │   │   └── maquina_vidente.py
-│   │   ├── api.py               rotas HTTP
+│   │   │   ├── maquina_vidente.py
+│   │   │   └── genius.py        árvore minimax com desempate estocástico
+│   │   ├── api.py               rotas HTTP (FastAPI)
 │   │   ├── cli.py               jogar pelo terminal
 │   │   └── analise.py           linear O(n) x binária O(log n)
-│   └── tests/
-└── frontend/           (próxima etapa)
+│   └── tests/                   162 testes automatizados (pytest)
+└── frontend/           Interface visual (React + Vite + Tailwind)
 ```
 
 ## Rodando o backend
@@ -62,6 +65,11 @@ Para desligar os prints: `BIGO_VERBOSE=0`.
 - `POST /maquina-vidente/{id}/feedback` body `{"feedback": "maior" | "menor" | "acertou"}`
 - `GET  /maquina-vidente/{id}` → estado, intervalo ativo, candidatos, histórico e "pensamento" de cada passo
 
+**Genius Característico**
+- `POST /genius` → cria partida, sorteia abertura dinâmica entre as 4 categorias e calcula a 1ª pergunta
+- `POST /genius/{id}/resposta` body `{"resposta": true | false}` → atualiza candidatos por árvore minimax e calcula próxima pergunta
+- `GET  /genius/{id}` → estado completo da partida, candidatos remanescentes, histórico e perfil descoberto
+
 Toda resposta traz um campo `complexidade` com as operações contadas e o tempo em ms.
 
 ## Análise de complexidade
@@ -74,6 +82,7 @@ Toda resposta traz um campo `complexidade` com as operações contadas e o tempo
 | Guardar no histórico | O(1) amortizado | `list.append` |
 | Buscar partida pelo id | O(1) médio | dicionário (hash table) |
 | Partida da Máquina Vidente | **O(log n)** | o intervalo cai pela metade a cada passo |
+| Partida do Genius Característico | **O(log n)** equivalente | árvore minimax reduz os candidatos exponencialmente |
 | Busca linear (comparação) | O(n) | testa número por número |
 
 Resultado de `python -m app.analise` (pior caso, nº de comparações):
